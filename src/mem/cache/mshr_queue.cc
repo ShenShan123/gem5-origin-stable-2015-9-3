@@ -65,6 +65,20 @@ MSHRQueue::MSHRQueue(const std::string &_label,
     }
 }
 
+/* return the number of total targets in mshr queue, by shen */
+const int MSHRQueue::totNumTargets() const
+{
+    int numTargets = 0;
+    for (auto it = allocatedList.begin(); it != allocatedList.end(); ++it)
+        numTargets += (*it)->getNumTargets();
+
+    return numTargets;
+}
+/* end, by shen */
+
+const int MSHRQueue::getNumEntries() const
+{ return numEntries; }
+
 MSHR *
 MSHRQueue::findMatch(Addr blk_addr, bool is_secure) const
 {

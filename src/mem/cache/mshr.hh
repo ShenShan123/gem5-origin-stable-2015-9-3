@@ -208,6 +208,8 @@ class MSHR : public Packet::SenderState, public Printable
     TargetList deferredTargets;
 
   public:
+    /* calculate service time for this mshr, by shen */
+    const uint64_t serviceTimeForEntry(Tick finishTime) const;
 
     bool isUncacheable() const { return _isUncacheable; }
 

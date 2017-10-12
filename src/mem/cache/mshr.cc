@@ -70,6 +70,19 @@ MSHR::MSHR() : readyTime(0), _isUncacheable(false), downstreamPending(false),
 {
 }
 
+/* calculate service time for this mshr, by shen */
+const Tick MSHR::serviceTimeForEntry(Tick finishTime) const
+{
+    Tick time = 0;
+    for (auto it = targets.begin(); it != targets.end(); ++it) {
+        assert(finishTime >= it->recvTime);
+        time += finishTime - it->recvTime;
+    }
+    
+    return time;
+}
+/* end, by shen */
+
 
 MSHR::TargetList::TargetList()
     : needsExclusive(false), hasUpgrade(false)

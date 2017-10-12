@@ -59,6 +59,123 @@
 #include "mem/cache/tags/base.hh"
 #include "sim/eventq.hh"
 
+/****************************************************
+   add to calculate reuse distance vector, start from here, by shen
+****************************************** *********/
+#include <iostream>
+#include <fstream>
+#include <map>
+#include <random>
+#include <assert.h>
+
+#define LOG2
+
+/* calculate log2(s) + 1 */
+template<class T>
+inline T log2p1(T s)
+{
+    T result = 0;
+    while (s) {
+        s >>= 1;
+        ++result;
+    }
+
+    return result;
+}
+
+/* fast to calculate log2(x)+1 */
+#ifdef LOG2
+#define DOLOG(x) log2p1(x)
+#else
+#define DOLOG(x) x
+#endif
+
+/* the truncated distance for RDV */
+const static uint64_t Truncation = 16384;
+
+template<class I>
+I genRandNum(I range)
+{
+    // construct a trivial random generator engine from a time-based seed:
+    std::random_device seed;
+    static std::mt19937 engine(seed());
+    static std::uniform_int_distribution<I> unif(1, range);
+    return unif(engine);
+}
+
+/* for recording distribution into a Histogram, 
+   Accur is the accuracy of transforming calculation */
+template <class B = int64_t>
+class Histogram
+{
+protected:
+    B * bins;
+    B samples;
+    int _size;
+
+public:
+    Histogram() : bins(nullptr), samples(0), _size(0) {};
+
+    Histogram(int s);
+
+    Histogram(const Histogram<B> & rhs);
+
+    ~Histogram();
+
+    void setSize(int s);
+
+    const int size() const;
+
+    void clear();
+
+    void normalize();
+
+    B & operator[] (const int idx) const;
+
+    Histogram<B> & operator=(const Histogram<B> & rhs);
+
+    Histogram<B> & operator+=(const Histogram<B> & rhs);
+
+    /* recompute the centroid */
+    void average(const Histogram<B> & rhs);
+
+    void sample(int x, uint16_t n = 1);
+
+    const B getSamples() const; 
+
+    void print(std::ofstream & file);
+};
+
+/* do reuse distance statistics */
+class ReuseDist
+{
+    std::map<uint64_t, uint64_t> addrMap;
+    uint64_t index;
+    uint32_t sampleInterval;
+    uint32_t sampleCounter;
+    uint32_t sampleResidual;
+
+public:
+    ReuseDist() : index(0), sampleInterval(0), sampleCounter(0), sampleResidual(0) {};
+
+    ~ReuseDist() {};
+
+    void setSampleInterval(uint32_t s);
+
+    void calReuseDist(uint64_t addr, Histogram<> & rdv);
+
+    uint32_t mapSize() { return addrMap.size(); }
+};
+
+/* instantiate Histogram and ReuseDist */
+static Histogram<> rdv(DOLOG(Truncation));
+static ReuseDist reuseDist;
+static std::ofstream rdvDump("rdv-16384.txt", std::ios::out);
+static std::ofstream metricsDump("metrics-dump.txt", std::ios::out);
+/*******************************************************
+   end here, by shen
+*******************************************************/
+
 //Forward decleration
 class BasePrefetcher;
 

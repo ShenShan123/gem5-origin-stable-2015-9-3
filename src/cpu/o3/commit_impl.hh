@@ -47,6 +47,8 @@
 #include <algorithm>
 #include <set>
 #include <string>
+/* add by shen */
+#include <iostream>
 
 #include "arch/utility.hh"
 #include "base/loader/symtab.hh"
@@ -1353,6 +1355,12 @@ DefaultCommit<Impl>::markCompletedInsts()
     }
 }
 
+/* do dump flag, definitions are in commit.cc, by shen */
+extern bool l1Dump;
+extern bool l2Dump;
+static int NumInts = 0;
+#define INTERVAL_LENTGH 10000000
+/* end, by shen */
 template <class Impl>
 void
 DefaultCommit<Impl>::updateComInstStats(DynInstPtr &inst)
@@ -1380,6 +1388,14 @@ DefaultCommit<Impl>::updateComInstStats(DynInstPtr &inst)
     //
     if (inst->isMemRef()) {
         statComRefs[tid]++;
+        /* it's time to dump metrics and rdv! by shen */
+        if (!((int64_t)statComRefs[tid].value() % INTERVAL_LENTGH)) {
+            l1Dump = true;
+            l2Dump = true;
+            ++NumInts;
+            std::cout << "Dump Interval: " << NumInts << std::endl;
+        }
+        /* end, by shen */
 
         if (inst->isLoad()) {
             statComLoads[tid]++;

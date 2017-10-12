@@ -31,4 +31,8 @@
 #include "cpu/o3/commit_impl.hh"
 #include "cpu/o3/isa_specific.hh"
 
+/* dump flag, by shen */
+bool l1Dump = false;
+bool l2Dump = false;
+/* end */
 template class DefaultCommit<O3CPUImpl>;

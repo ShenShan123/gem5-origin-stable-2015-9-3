@@ -65,6 +65,196 @@
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
 
+/****************************************************
+   add to calculate reuse distance vector, start from here, by shen
+****************************************** *********/
+template <class B>
+Histogram<B>::Histogram(int s) : samples(0), _size(s)
+{
+    bins = new B[_size];
+    /* init bins to 0 */
+    for (int i = 0; i < _size; ++i)
+        bins[i] = 0;
+}
+
+template <class B>
+Histogram<B>::Histogram(const Histogram<B> & rhs) : samples(rhs.samples), _size(rhs._size)
+{
+    bins = new B[_size];
+    for (int i = 0; i < _size; ++i)
+        bins[i] = rhs.bins[i];
+}
+
+template <class B>
+Histogram<B>::~Histogram() { delete [] bins; }
+
+template <class B>
+void Histogram<B>::setSize(int s)
+{
+    if (bins != nullptr)
+        delete [] bins;
+
+    _size = s;
+    bins = new B[_size];
+
+    /* init bins to 0 */
+    for (int i = 0; i < _size; ++i)
+        bins[i] = 0;
+
+    //std::cout << "size of bins " << _size << std::endl;
+}
+
+
+template <class B>
+const int Histogram<B>::size() const { return _size; }
+
+template <class B>
+void Histogram<B>::clear()
+{
+    samples = 0;
+    /* when clear bins, the size keeps unchanged */
+    for (int i = 0; i < _size; ++i)
+        bins[i] = 0;
+}
+
+template <class B>
+void Histogram<B>::normalize()
+{
+    for (int i = 0; i < _size; ++i)
+        bins[i] /= samples;
+}
+
+template <class B>
+B & Histogram<B>::operator[](const int idx) const
+{
+    assert(idx >= 0 && idx < _size);
+    return bins[idx];
+}
+
+template <class B>
+Histogram<B> & Histogram<B>::operator=(const Histogram<B> & rhs)
+{
+    assert(_size == rhs.size());
+
+    for (int i = 0; i < _size; ++i)
+        bins[i] = rhs.bins[i];
+
+    samples = rhs.samples;
+    return *this;
+}
+
+template <class B>
+Histogram<B> & Histogram<B>::operator+=(const Histogram<B> & rhs)
+{
+    assert(_size == rhs._size);
+
+    for (int i = 0; i < _size; ++i)
+        bins[i] += rhs.bins[i];
+
+    samples += rhs.samples;
+    return *this;
+}
+
+template <class B>
+void Histogram<B>::average(const Histogram<B> & rhs)
+{
+    assert(_size == rhs._size);
+
+    for (int i = 0; i < _size; ++i)
+        bins[i] = (bins[i] + rhs.bins[i]) / 2;
+
+    samples = (samples + rhs.samples) / 2;
+}
+
+template <class B>
+void Histogram<B>::sample(int x, uint16_t n)
+{
+    /* the sample number must less than max size of bins */
+    assert(x < _size && x >= 0);
+    bins[x] += n;
+    /* calculate the total num of sampling */
+    samples += n;
+}
+
+template <class B>
+void Histogram<B>::print(std::ofstream & file)
+{
+    //file.write((char *)bins, sizeof(B) * _size);
+    for (int i = 0; i < _size; ++i)
+        file << bins[i] << " ";
+    file  << "\n";
+}
+
+void ReuseDist::setSampleInterval(uint32_t s)
+{
+    sampleInterval = s;
+    sampleCounter = s ? genRandNum(s) : 0;
+}
+
+void ReuseDist::calReuseDist(uint64_t addr, Histogram<> & rdv)
+{
+    ++index;
+
+    auto pos = addrMap.find(addr);
+
+    if (pos != addrMap.end()) {
+        uint32_t reuseDist = index - pos->second - 1; 
+        /* for the sampling scheme, rd-counter is clear when finish rd calculation */
+        if (sampleInterval)
+            addrMap.erase(pos);
+        /* if the rd larger than the truncation, we check other rd-counters, 
+           if their rds are also larger then truncation, we just delete them */
+        if (reuseDist >= Truncation) {
+            /* the total number of rd-counters whose values are larger then truncation */
+            int numTrunc = 1;
+
+            for (auto it = addrMap.begin(); it != addrMap.end(); ) {
+                if (index - it->second - 1 >= Truncation) {
+                    ++numTrunc;
+                    auto eraseIt = it;
+                    ++it;
+                    addrMap.erase(eraseIt);
+                }
+                else
+                    ++it;
+            }
+
+            rdv.sample(DOLOG(Truncation), sampleInterval ? numTrunc : 1);
+
+        }
+        /* else we don't need to traverse the addrMap */
+        else
+            rdv.sample(DOLOG(reuseDist));
+    }
+    /* we don't find this address indicate cold address in non-sampling scheme */
+    else if (!sampleInterval)
+        rdv.sample(DOLOG(Truncation));
+
+    /* for sampline scheme */
+    if (sampleCounter)
+        --sampleCounter;
+    /* when sampleCounter is zero in sampling scheme, 
+       we sample an address to calculate rd. */
+    else if (sampleInterval) {
+        /* ensure no same address is existing in addrMap */
+        assert(!addrMap[addr]);
+        uint32_t random = genRandNum(sampleInterval);
+        /* set sampleCounter for the next sample */
+        sampleCounter = random + sampleResidual;
+        sampleResidual = sampleInterval - random;
+        //std::cout << "do sample, mapsize: " << addrMap.size() << std::endl;
+        /* record the new sampled address and the index */
+        addrMap[addr] = index;
+    }
+    /* for non-sampling scheme */
+    else 
+        addrMap[addr] = index;
+
+}
+/*******************************************************
+   end here, by shen
+*******************************************************/
+
 Cache::Cache(const Params *p)
     : BaseCache(p),
       tags(p->tags),
@@ -92,6 +282,10 @@ Cache::~Cache()
 
     delete cpuSidePort;
     delete memSidePort;
+
+    /* close the dump file, by shen */
+    rdvDump.close();
+    metricsDump.close();
 }
 
 void
@@ -443,10 +637,26 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
         assert(isTopLevel); // should only happen at L1 or I/O cache
     }
 }
+/* global variables for MLP calculation, by shen */
+static uint64_t totTargetInMshrQue = 0;
+static uint64_t mlpSamples = 0;
+/* global variables for Service Time calculation, by shen */
+static Tick totServiceTime = 0;
+static int completedEntry = 0;
+/* end, by shen */
+//zyt Define register for OAH_P:Previous 10M's OverAllHits,OAA:OverAllAccess,OAM:OverAllMiss.
+static double OAH_P, OAA_P, OAM_P, ALL_Miss_Rate, Interval_Miss_Rate;
+static double OAH_P_L2, OAA_P_L2, OAM_P_L2, ALL_Miss_Rate_L2, Interval_Miss_Rate_L2;
+#define INTERVAL_LENGTH 10000000
+/* do dump flag, definitions are in commit.cc, by shen */
+extern bool l1Dump;
+extern bool l2Dump;
+// zyt
 
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
+
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
 //@todo Add back in MemDebug Calls
 //    MemDebug::cacheAccess(pkt);
@@ -546,6 +756,62 @@ Cache::recvTimingReq(PacketPtr pkt)
         }
     }
 
+    // zyt add
+    if (name() == "system.cpu.dcache") {    // L1 data
+            reuseDist.calReuseDist(blockAlign(pkt->getAddr()) , rdv);
+            double OAH = overallHits.total();// All hits
+            double OAA = overallAccesses.total();//All accesses
+            double OAM = overallMisses.total();//All miss
+            if(l1Dump) { // dump every 10M mem refs
+                ALL_Miss_Rate = OAM / OAA;
+                metricsDump << "L1_ALL: " << OAH << " " << OAM << " " << OAA << " " << ALL_Miss_Rate << " ";
+                Interval_Miss_Rate = (OAM-OAM_P) / (OAA - OAA_P); //OAM-OAM_P : calculate current SET(10M)'s miss number!
+                metricsDump << "L1_INT: " << (OAH - OAH_P) << " " << (OAM - OAM_P) << " " \
+                          << (OAA - OAA_P) << " " << Interval_Miss_Rate << std::endl;
+                OAH_P = OAH;//record current data OAH in OAH_P
+                OAA_P = OAA;
+                OAM_P = OAM; 
+                rdv.print(rdvDump);
+                rdv.clear();
+
+                /* dump service time, by shen */
+                if (completedEntry) {
+                    metricsDump << "ServiceTime: " << totServiceTime / completedEntry << std::endl;
+                    totServiceTime = 0;
+                    completedEntry = 0;
+                }
+
+                /* dump MLP, by shen */
+                if (mlpSamples) {
+                    metricsDump << "MLP: " << (float)totTargetInMshrQue / mlpSamples << std::endl;
+                    totTargetInMshrQue = 0;
+                    mlpSamples = 0;
+                }
+
+                l1Dump = false;
+            }
+    }
+
+    if (name() == "system.l2") {  // L2 data
+            double OAH_L2 = overallHits.total();
+            double OAA_L2 = overallAccesses.total();
+            double OAM_L2 = overallMisses.total();
+            if(l2Dump)  // 10M-Access
+            {
+                ALL_Miss_Rate_L2 = OAM_L2 / OAA_L2;
+                metricsDump << "L2_ALL: " << OAH_L2 << " " << OAM_L2 << " " << OAA_L2 << " " << ALL_Miss_Rate_L2 << " ";
+                Interval_Miss_Rate_L2 = (OAM_L2 - OAM_P_L2) / (OAA_L2 - OAA_P_L2);
+                metricsDump << "L2_INT: " << (OAH_L2 - OAH_P_L2) << " " << (OAM_L2 - OAM_P_L2) << " " \
+                          << (OAA_L2 - OAA_P_L2) << " " << Interval_Miss_Rate_L2 << std::endl;
+                OAH_P_L2 = OAH_L2;
+                OAA_P_L2 = OAA_L2;
+                OAM_P_L2 = OAM_L2; 
+
+                l2Dump = false;
+            }
+    }
+    // zyt end
+
     // Here we charge the headerDelay that takes into account the latencies
     // of the bus, if the packet comes from it.
     // The latency charged it is just lat that is the value of lookupLatency
@@ -597,6 +863,16 @@ Cache::recvTimingReq(PacketPtr pkt)
         }
     } else {
         // miss
+        /* if the mshrs not empty, by shen */
+        if (name() == "system.l2" && (mshrQueue.totNumTargets() + writeBuffer.totNumTargets())) {
+            /* record total number of targets in mshr queue during a interval,
+               and the number of sampling. */
+            //assert(mshrQueue.totNumTargets() + writeBuffer.totNumTargets() >= 1);
+            totTargetInMshrQue += mshrQueue.totNumTargets() + writeBuffer.totNumTargets();
+            ++mlpSamples;
+        }
+        /* end, by shen */
+
 
         Addr blk_addr = blockAlign(pkt->getAddr());
 
@@ -604,6 +880,8 @@ Cache::recvTimingReq(PacketPtr pkt)
         // uncacheable request
         MSHR *mshr = pkt->req->isUncacheable() ? nullptr :
             mshrQueue.findMatch(blk_addr, pkt->isSecure());
+
+
 
         // Software prefetch handling:
         // To keep the core from waiting on data it won't look at
@@ -1063,7 +1341,6 @@ Cache::functionalAccess(PacketPtr pkt, bool fromCpuSide)
 //
 /////////////////////////////////////////////////////
 
-
 void
 Cache::recvTimingResp(PacketPtr pkt)
 {
@@ -1133,6 +1410,13 @@ Cache::recvTimingResp(PacketPtr pkt)
 
     // First offset for critical word first calculations
     int initial_offset = initial_tgt->pkt->getOffset(blkSize);
+
+    /* calculate service time , by shen */
+    if (name() == "system.l2") {
+        totServiceTime += mshr->serviceTimeForEntry(curTick());
+        completedEntry += mshr->getNumTargets();
+    }
+    /* end, by shen */
 
     while (mshr->hasTargets()) {
         MSHR::Target *target = mshr->getTarget();

@@ -118,6 +118,11 @@ class MSHRQueue : public Drainable
     MSHRQueue(const std::string &_label, int num_entries, int reserve,
               int demand_reserve, int index);
 
+    /* return the number of total targets in mshr queue, by shen */
+    const int totNumTargets() const;
+    /* return the number of entries in queue, by shen */
+    const int getNumEntries() const;
+
     /**
      * Find the first MSHR that matches the provided address.
      * @param blk_addr The block address to find.
