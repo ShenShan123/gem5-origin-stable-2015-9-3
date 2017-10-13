@@ -220,7 +220,6 @@ void ReuseDist::calReuseDist(uint64_t addr, Histogram<> & rdv)
             }
 
             rdv.sample(DOLOG(Truncation), sampleInterval ? numTrunc : 1);
-
         }
         /* else we don't need to traverse the addrMap */
         else

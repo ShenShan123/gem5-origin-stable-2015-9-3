@@ -91,7 +91,7 @@ inline T log2p1(T s)
 #endif
 
 /* the truncated distance for RDV */
-const static uint64_t Truncation = 16384;
+const static int Truncation = 16384;
 
 template<class I>
 I genRandNum(I range)
