@@ -139,7 +139,7 @@ public:
     /* recompute the centroid */
     void average(const Histogram<B> & rhs);
 
-    void sample(int x, uint16_t n = 1);
+    void sample(int x, int n = 1);
 
     const B getSamples() const; 
 
@@ -168,7 +168,7 @@ public:
 };
 
 /* instantiate Histogram and ReuseDist */
-static Histogram<> rdv(DOLOG(Truncation));
+static Histogram<> rdv(DOLOG(Truncation) + 1);
 static ReuseDist reuseDist;
 static std::ofstream rdvDump("rdv-16384.txt", std::ios::out);
 static std::ofstream metricsDump("metrics-dump.txt", std::ios::out);

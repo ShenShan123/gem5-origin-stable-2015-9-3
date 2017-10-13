@@ -104,7 +104,6 @@ void Histogram<B>::setSize(int s)
     //std::cout << "size of bins " << _size << std::endl;
 }
 
-
 template <class B>
 const int Histogram<B>::size() const { return _size; }
 
@@ -167,7 +166,7 @@ void Histogram<B>::average(const Histogram<B> & rhs)
 }
 
 template <class B>
-void Histogram<B>::sample(int x, uint16_t n)
+void Histogram<B>::sample(int x, int n)
 {
     /* the sample number must less than max size of bins */
     assert(x < _size && x >= 0);
@@ -194,7 +193,6 @@ void ReuseDist::setSampleInterval(uint32_t s)
 void ReuseDist::calReuseDist(uint64_t addr, Histogram<> & rdv)
 {
     ++index;
-
     auto pos = addrMap.find(addr);
 
     if (pos != addrMap.end()) {
@@ -248,7 +246,6 @@ void ReuseDist::calReuseDist(uint64_t addr, Histogram<> & rdv)
     /* for non-sampling scheme */
     else 
         addrMap[addr] = index;
-
 }
 /*******************************************************
    end here, by shen
@@ -655,7 +652,6 @@ extern bool l2Dump;
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
-
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
 //@todo Add back in MemDebug Calls
 //    MemDebug::cacheAccess(pkt);
@@ -757,11 +753,12 @@ Cache::recvTimingReq(PacketPtr pkt)
 
     // zyt add
     if (name() == "system.cpu.dcache") {    // L1 data
-            reuseDist.calReuseDist(blockAlign(pkt->getAddr()) , rdv);
+            reuseDist.calReuseDist(blockAlign(pkt->getAddr()), rdv);
             double OAH = overallHits.total();// All hits
             double OAA = overallAccesses.total();//All accesses
             double OAM = overallMisses.total();//All miss
             if(l1Dump) { // dump every 10M mem refs
+                std::cout << "l1 dcacheDump\n";
                 ALL_Miss_Rate = OAM / OAA;
                 metricsDump << "L1_ALL: " << OAH << " " << OAM << " " << OAA << " " << ALL_Miss_Rate << " ";
                 Interval_Miss_Rate = (OAM-OAM_P) / (OAA - OAA_P); //OAM-OAM_P : calculate current SET(10M)'s miss number!
@@ -769,7 +766,7 @@ Cache::recvTimingReq(PacketPtr pkt)
                           << (OAA - OAA_P) << " " << Interval_Miss_Rate << std::endl;
                 OAH_P = OAH;//record current data OAH in OAH_P
                 OAA_P = OAA;
-                OAM_P = OAM; 
+                OAM_P = OAM;
                 rdv.print(rdvDump);
                 rdv.clear();
 
@@ -797,6 +794,7 @@ Cache::recvTimingReq(PacketPtr pkt)
             double OAM_L2 = overallMisses.total();
             if(l2Dump)  // 10M-Access
             {
+                std::cout << "l2 cache Dump\n";
                 ALL_Miss_Rate_L2 = OAM_L2 / OAA_L2;
                 metricsDump << "L2_ALL: " << OAH_L2 << " " << OAM_L2 << " " << OAA_L2 << " " << ALL_Miss_Rate_L2 << " ";
                 Interval_Miss_Rate_L2 = (OAM_L2 - OAM_P_L2) / (OAA_L2 - OAA_P_L2);
@@ -1037,7 +1035,6 @@ Cache::recvTimingReq(PacketPtr pkt)
     if (next_pf_time != MaxTick)
         requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),
                                                 next_pf_time));
-
     return true;
 }
 
