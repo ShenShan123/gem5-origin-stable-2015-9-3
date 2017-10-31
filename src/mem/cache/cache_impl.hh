@@ -776,6 +776,8 @@ Cache::recvTimingReq(PacketPtr pkt)
                     totServiceTime = 0;
                     completedEntry = 0;
                 }
+                else
+                    metricsDump << "ServiceTime: " << 0 << std::endl;
 
                 /* dump MLP, by shen */
                 if (mlpSamples) {
@@ -783,6 +785,8 @@ Cache::recvTimingReq(PacketPtr pkt)
                     totTargetInMshrQue = 0;
                     mlpSamples = 0;
                 }
+                else
+                    metricsDump << "MLP: " << 0 << std::endl;
 
                 l1Dump = false;
             }
