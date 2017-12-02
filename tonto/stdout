@@ -1,0 +1,45 @@
+
+---------------------------------------------------------------
+
+ T   O   N   T   O
+
+ A free object-based system for computational chemistry
+
+ Version 1.0
+ with minor modifications for SPEC
+
+ For conditions of use, on-line documentation, and contributor
+ and developer information see :-
+
+ www.theochem.uwa.edu.au/tonto/
+
+ Dylan Jayatilaka
+ Daniel Grimwood
+---------------------------------------------------------------
+
+Timer started at XX.
+
+keyword found --> name=
+
+keyword found --> charge=
+
+keyword found --> multiplicity=
+
+keyword found --> crystal=
+
+keyword found --> basis_sets=
+
+keyword found --> atoms=
+Bases all resolved
+
+keyword found --> scfdata=
+
+keyword found --> scf
+
+Error in routine FILE:open ... error opening old file Nitrogen.old_density_matrix
+ 
+
+File name   = stdin
+Line number =  867
+File buffer = scf
+Cursor ---------^
