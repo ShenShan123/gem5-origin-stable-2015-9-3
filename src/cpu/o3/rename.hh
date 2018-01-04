@@ -523,6 +523,8 @@ class DefaultRename
     // beforeAfterFlag = 1 for before
     // beforeAfterFlag = 2 for after
     uint16_t beforeAfterFlag;
+    // is from serializeAfterInsts?
+    bool fromSerializeAfterInst;
     // the scalars for serializing stall cycles
     Stats::Scalar exceptionEntryStallCycles;
     Stats::Scalar modifyProgramStatusStallCycles;

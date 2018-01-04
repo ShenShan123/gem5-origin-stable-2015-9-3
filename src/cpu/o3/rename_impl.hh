@@ -83,6 +83,7 @@ DefaultRename<Impl>::DefaultRename(O3CPU *_cpu, DerivO3CPUParams *params)
     // init the flags, by shen
     serialStallFlag = 0;
     beforeAfterFlag = 0;
+    fromSerializeAfterInst = false;
 }
 
 template <class Impl>
@@ -519,7 +520,7 @@ DefaultRename<Impl>::rename(bool &status_change, ThreadID tid)
         }
 
         // count the stall cycles for different categories of serializing instructions, by shen
-        assert(beforeAfterFlag);
+        //assert(serialStallFlag);
         if (serialStallFlag == 1)
             exceptionEntryStallCycles++;
         else if (serialStallFlag == 2) 
@@ -758,10 +759,14 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                     serialStallFlag = 3;
                     explicitSyncSerialInstNum++;
                 }
-                else if (inst->isOtherSerializing()) {
+                //else if (inst->isOtherSerializing()) {
+                else if (inst->isIprAccess()) {
+                //else {
                     serialStallFlag = 4;
                     otherSerialInstNum++;
                 }
+                
+                fromSerializeAfterInst = true;
                 // end, by shen
 
             } else {
@@ -790,6 +795,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             // set the flag and count the number of instructions, by shen
             serializeAfterNum++;
             beforeAfterFlag = 2;
+            fromSerializeAfterInst = true;
             if (inst->isExceptionEntrySerializing()) {
                 serialStallFlag = 1;
                 exceptionEntrySerialInstNum++;
@@ -803,7 +809,8 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 serialStallFlag = 3;
                 explicitSyncSerialInstNum++;
             }
-            else if (inst->isOtherSerializing()) {
+            else if (inst->isStoreConditional()) {
+            //else {
                 serialStallFlag = 4;
                 otherSerialInstNum++;
             }
@@ -1501,6 +1508,8 @@ DefaultRename<Impl>::serializeAfter(InstQueue &inst_list, ThreadID tid)
 
     // Set the next instruction as serializing.
     inst_list.front()->setSerializeBefore();
+    // set the next instruction to be serialzed, by shen
+    fromSerializeAfterInst = true;
 }
 
 template <class Impl>
