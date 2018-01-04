@@ -42,11 +42,11 @@ let {{
     svcCode = '''
     fault = std::make_shared<SupervisorCall>(machInst, imm);
     '''
-
+    # add the flag for this serializing instruction that enters an exception, by shen
     svcIop = InstObjParams("svc", "Svc", "ImmOp",
                            { "code": svcCode,
                              "predicate_test": predicateTest },
-                           ["IsSyscall", "IsNonSpeculative", "IsSerializeAfter"])
+                           ["IsSyscall", "IsNonSpeculative", "IsSerializeAfter", "IsExceptionEntrySerializing"])
     header_output = ImmOpDeclare.subst(svcIop)
     decoder_output = ImmOpConstructor.subst(svcIop)
     exec_output = PredOpExecute.subst(svcIop)
@@ -72,11 +72,12 @@ let {{
         fault = disabledFault();
     }
     '''
-
+    # add the flag for this serializing instruction that enters an exception, by shen
     smcIop = InstObjParams("smc", "Smc", "PredOp",
                            { "code": smcCode,
                              "predicate_test": predicateTest },
-                           ["IsNonSpeculative", "IsSerializeAfter"])
+                           ["IsNonSpeculative", "IsSerializeAfter", "IsExceptionEntrySerializing"]) 
+
     header_output += BasicDeclare.subst(smcIop)
     decoder_output += BasicConstructor.subst(smcIop)
     exec_output += PredOpExecute.subst(smcIop)
@@ -94,11 +95,11 @@ let {{
         fault = std::make_shared<HypervisorCall>(machInst, imm);
     }
     '''
-
+    # add the flag for this serializing instruction that enters an exception, by shen
     hvcIop = InstObjParams("hvc", "Hvc", "ImmOp",
                            { "code": hvcCode,
                              "predicate_test": predicateTest },
-                           ["IsNonSpeculative", "IsSerializeAfter"])
+                           ["IsNonSpeculative", "IsSerializeAfter", "IsExceptionEntrySerializing"])
     header_output += ImmOpDeclare.subst(hvcIop)
     decoder_output += ImmOpConstructor.subst(hvcIop)
     exec_output += PredOpExecute.subst(hvcIop)
@@ -126,17 +127,14 @@ let {{
 
         NPC = (old_cpsr.mode == MODE_HYP) ? ElrHyp : LR;
     '''
-
+    # add the flag for this serializing instruction that enters an exception, by shen
     eretIop = InstObjParams("eret", "Eret", "PredOp",
                            { "code": eretCode,
                              "predicate_test": predicateTest },
-                           ["IsNonSpeculative", "IsSerializeAfter"])
+                           ["IsNonSpeculative", "IsSerializeAfter", "IsExceptionEntrySerializing"])
     header_output += BasicDeclare.subst(eretIop)
     decoder_output += BasicConstructor.subst(eretIop)
     exec_output += PredOpExecute.subst(eretIop)
-
-
-
 }};
 
 let {{
@@ -151,20 +149,21 @@ let {{
         cpsr.ge = CondCodesGE;
         Dest = cpsr & 0xF8FF03DF
     '''
-
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     mrsCpsrIop = InstObjParams("mrs", "MrsCpsr", "MrsOp",
                                { "code": mrsCpsrCode,
                                  "predicate_test": condPredicateTest },
-                               ["IsSerializeBefore"])
+                               ["IsSerializeBefore", "IsModifyProgramStatusSerializing"]) 
     header_output += MrsDeclare.subst(mrsCpsrIop)
     decoder_output += MrsConstructor.subst(mrsCpsrIop)
     exec_output += PredOpExecute.subst(mrsCpsrIop)
 
     mrsSpsrCode = "Dest = Spsr"
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     mrsSpsrIop = InstObjParams("mrs", "MrsSpsr", "MrsOp",
                                { "code": mrsSpsrCode,
                                  "predicate_test": predicateTest },
-                               ["IsSerializeBefore"])
+                               ["IsSerializeBefore", "IsModifyProgramStatusSerializing"]) 
     header_output += MrsDeclare.subst(mrsSpsrIop)
     decoder_output += MrsConstructor.subst(mrsSpsrIop)
     exec_output += PredOpExecute.subst(mrsSpsrIop)
@@ -184,10 +183,11 @@ let {{
                                                           mnemonic);
         }
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     mrsBankedRegIop = InstObjParams("mrs", "MrsBankedReg", "MrsOp",
                                     { "code": mrsBankedRegCode,
                                       "predicate_test": predicateTest },
-                                    ["IsSerializeBefore"])
+                                    ["IsSerializeBefore", "IsModifyProgramStatusSerializing"]) 
     header_output += MrsBankedRegDeclare.subst(mrsBankedRegIop)
     decoder_output += MrsBankedRegConstructor.subst(mrsBankedRegIop)
     exec_output += PredOpExecute.subst(mrsBankedRegIop)
@@ -216,10 +216,11 @@ let {{
                                                           mnemonic);
         }
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     msrBankedRegIop = InstObjParams("msr", "MsrBankedReg", "MsrRegOp",
                                     { "code": msrBankedRegCode,
                                       "predicate_test": predicateTest },
-                                    ["IsSerializeAfter", "IsNonSpeculative"])
+                                    ["IsSerializeAfter", "IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += MsrBankedRegDeclare.subst(msrBankedRegIop)
     decoder_output += MsrBankedRegConstructor.subst(msrBankedRegIop)
     exec_output += PredOpExecute.subst(msrBankedRegIop)
@@ -241,19 +242,21 @@ let {{
         CondCodesV = new_cpsr.v;
         CondCodesGE = new_cpsr.ge;
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     msrCpsrRegIop = InstObjParams("msr", "MsrCpsrReg", "MsrRegOp",
                                   { "code": msrCpsrRegCode,
                                     "predicate_test": condPredicateTest },
-                                  ["IsSerializeAfter","IsNonSpeculative"])
+                                  ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += MsrRegDeclare.subst(msrCpsrRegIop)
     decoder_output += MsrRegConstructor.subst(msrCpsrRegIop)
     exec_output += PredOpExecute.subst(msrCpsrRegIop)
 
     msrSpsrRegCode = "Spsr = spsrWriteByInstr(Spsr, Op1, byteMask, false);"
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     msrSpsrRegIop = InstObjParams("msr", "MsrSpsrReg", "MsrRegOp",
                                   { "code": msrSpsrRegCode,
                                     "predicate_test": predicateTest },
-                                  ["IsSerializeAfter","IsNonSpeculative"])
+                                  ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"]) 
     header_output += MsrRegDeclare.subst(msrSpsrRegIop)
     decoder_output += MsrRegConstructor.subst(msrSpsrRegIop)
     exec_output += PredOpExecute.subst(msrSpsrRegIop)
@@ -274,19 +277,22 @@ let {{
         CondCodesV = new_cpsr.v;
         CondCodesGE = new_cpsr.ge;
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     msrCpsrImmIop = InstObjParams("msr", "MsrCpsrImm", "MsrImmOp",
                                   { "code": msrCpsrImmCode,
                                     "predicate_test": condPredicateTest },
-                                  ["IsSerializeAfter","IsNonSpeculative"])
+                                  ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += MsrImmDeclare.subst(msrCpsrImmIop)
     decoder_output += MsrImmConstructor.subst(msrCpsrImmIop)
     exec_output += PredOpExecute.subst(msrCpsrImmIop)
 
     msrSpsrImmCode = "Spsr = spsrWriteByInstr(Spsr, imm, byteMask, false);"
+
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     msrSpsrImmIop = InstObjParams("msr", "MsrSpsrImm", "MsrImmOp",
                                   { "code": msrSpsrImmCode,
                                     "predicate_test": predicateTest },
-                                  ["IsSerializeAfter","IsNonSpeculative"])
+                                  ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"]) 
     header_output += MsrImmDeclare.subst(msrSpsrImmIop)
     decoder_output += MsrImmConstructor.subst(msrSpsrImmIop)
     exec_output += PredOpExecute.subst(msrSpsrImmIop)
@@ -674,12 +680,13 @@ let {{
     // and SEV interrupts
     SevMailbox = 1;
     '''
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     wfeIop = InstObjParams("wfe", "WfeInst", "PredOp", \
             { "code" : wfeCode,
               "pred_fixup" : wfePredFixUpCode,
               "predicate_test" : predicateTest },
             ["IsNonSpeculative", "IsQuiesce",
-             "IsSerializeAfter", "IsUnverifiable"])
+             "IsSerializeAfter", "IsUnverifiable", "IsExplicitSyncSerializing"]) 
     header_output += BasicDeclare.subst(wfeIop)
     decoder_output += BasicConstructor.subst(wfeIop)
     exec_output += QuiescePredOpExecuteWithFixup.subst(wfeIop)
@@ -713,10 +720,11 @@ let {{
     }
     tc->getCpuPtr()->clearInterrupt(INT_ABT, 0);
     '''
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     wfiIop = InstObjParams("wfi", "WfiInst", "PredOp", \
             { "code" : wfiCode, "predicate_test" : predicateTest },
             ["IsNonSpeculative", "IsQuiesce",
-             "IsSerializeAfter", "IsUnverifiable"])
+             "IsSerializeAfter", "IsUnverifiable", "IsExplicitSyncSerializing"])
     header_output += BasicDeclare.subst(wfiIop)
     decoder_output += BasicConstructor.subst(wfiIop)
     exec_output += QuiescePredOpExecute.subst(wfiIop)
@@ -845,10 +853,11 @@ let {{
     }
     MiscDest = Op1;
     '''
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     mcr14Iop = InstObjParams("mcr", "Mcr14", "RegRegImmOp",
                              { "code": mcr14code,
                                "predicate_test": predicateTest },
-                               ["IsSerializeAfter","IsNonSpeculative"])
+                               ["IsSerializeAfter","IsNonSpeculative", "IsExplicitSyncSerializing"])
     header_output += RegRegImmOpDeclare.subst(mcr14Iop)
     decoder_output += RegRegImmOpConstructor.subst(mcr14Iop)
     exec_output += PredOpExecute.subst(mcr14Iop)
@@ -904,10 +913,11 @@ let {{
     }
     MiscNsBankedDest = Op1;
     '''
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     mcr15Iop = InstObjParams("mcr", "Mcr15", "MiscRegRegImmOp",
                              { "code": mcr15code,
                                "predicate_test": predicateTest },
-                               ["IsSerializeAfter","IsNonSpeculative"])
+                               ["IsSerializeAfter","IsNonSpeculative", "IsExplicitSyncSerializing"])
     header_output += MiscRegRegImmOpDeclare.subst(mcr15Iop)
     decoder_output += MiscRegRegImmOpConstructor.subst(mcr15Iop)
     exec_output += PredOpExecute.subst(mcr15Iop)
@@ -997,10 +1007,11 @@ let {{
         cpsr.e = imm;
         Cpsr = cpsr;
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     setendIop = InstObjParams("setend", "Setend", "ImmOp",
                               { "code": setendCode,
                                 "predicate_test": predicateTest },
-                              ["IsSerializeAfter","IsNonSpeculative"])
+                              ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += ImmOpDeclare.subst(setendIop)
     decoder_output += ImmOpConstructor.subst(setendIop)
     exec_output += PredOpExecute.subst(setendIop)
@@ -1024,10 +1035,11 @@ let {{
         }
         fault = std::make_shared<FlushPipe>();
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     isbIop = InstObjParams("isb", "Isb", "ImmOp",
                              {"code": isbCode,
                                "predicate_test": predicateTest},
-                                ['IsSerializeAfter'])
+                                ['IsSerializeAfter', 'IsExplicitSyncSerializing'])
     header_output += ImmOpDeclare.subst(isbIop)
     decoder_output += ImmOpConstructor.subst(isbIop)
     exec_output += PredOpExecute.subst(isbIop)
@@ -1041,10 +1053,11 @@ let {{
         }
         fault = std::make_shared<FlushPipe>();
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     dsbIop = InstObjParams("dsb", "Dsb", "ImmOp",
                              {"code": dsbCode,
                                "predicate_test": predicateTest},
-                              ['IsMemBarrier', 'IsSerializeAfter'])
+                              ['IsMemBarrier', 'IsSerializeAfter', 'IsExplicitSyncSerializing']) 
     header_output += ImmOpDeclare.subst(dsbIop)
     decoder_output += ImmOpConstructor.subst(dsbIop)
     exec_output += PredOpExecute.subst(dsbIop)
@@ -1099,10 +1112,11 @@ let {{
     }
     Cpsr = cpsr;
     '''
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     cpsIop = InstObjParams("cps", "Cps", "ImmOp",
                            { "code": cpsCode,
                              "predicate_test": predicateTest },
-                           ["IsSerializeAfter","IsNonSpeculative"])
+                           ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += ImmOpDeclare.subst(cpsIop)
     decoder_output += ImmOpConstructor.subst(cpsIop)
     exec_output += PredOpExecute.subst(cpsIop)

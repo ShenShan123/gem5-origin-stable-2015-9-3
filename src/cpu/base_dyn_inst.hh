@@ -535,6 +535,14 @@ class BaseDynInst : public ExecContext, public RefCounted
     { return staticInst->isSerializeBefore() || status[SerializeBefore]; }
     bool isSerializeAfter() const
     { return staticInst->isSerializeAfter() || status[SerializeAfter]; }
+
+    // return the category of serializing instructions, by shen
+    bool isExceptionEntrySerializing () const { return staticInst->isExceptionEntrySerializing(); }
+    bool isModifyProgramStatusSerializing () const { return staticInst->isModifyProgramStatusSerializing(); }
+    bool isExplicitSyncSerializing () const { return staticInst->isExplicitSyncSerializing(); }
+    bool isOtherSerializing () const { return staticInst->isOtherSerializing(); }
+    // end, by shen
+
     bool isSquashAfter() const { return staticInst->isSquashAfter(); }
     bool isMemBarrier()   const { return staticInst->isMemBarrier(); }
     bool isWriteBarrier() const { return staticInst->isWriteBarrier(); }

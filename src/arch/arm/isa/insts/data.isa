@@ -271,12 +271,15 @@ let {{
                 | ((new_cpsr).it1 & 0x3);
             SevMailbox = 1;
             '''
+            # add the flag for this serializing instruction that modifies CPRS, by shen
             buildImmDataInst(mnem + 's', code, flagType,
                              suffix = "ImmPclr", buildCc = False,
-                             instFlags = ["IsSerializeAfter","IsNonSpeculative"])
+                             instFlags = ["IsSerializeAfter","IsNonSpeculative","IsModifyProgramStatusSerializing"]) 
+            
+            # add the flag for this serializing instruction that modifies CPRS, by shen
             buildRegDataInst(mnem + 's', code, flagType,
                              suffix = "RegPclr", buildCc = False,
-                             instFlags = ["IsSerializeAfter","IsNonSpeculative"])
+                             instFlags = ["IsSerializeAfter","IsNonSpeculative","IsModifyProgramStatusSerializing"])
 
     buildDataInst("and", "Dest = resTemp = Op1 & secondOp;")
     buildDataInst("eor", "Dest = resTemp = Op1 ^ secondOp;")

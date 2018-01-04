@@ -44,7 +44,7 @@ let {{
 
     svcIop = InstObjParams("svc", "Svc64", "ArmStaticInst",
                            svcCode, ["IsSyscall", "IsNonSpeculative",
-                                     "IsSerializeAfter"])
+                                     "IsSerializeAfter", "IsExceptionEntrySerializing"]) # add the flag for this serializing instruction that enters an exception, by shen
     header_output = BasicDeclare.subst(svcIop)
     decoder_output = BasicConstructor64.subst(svcIop)
     exec_output = BasicExecute.subst(svcIop)
@@ -60,9 +60,9 @@ let {{
         fault = std::make_shared<SecureMonitorCall>(machInst);
     }
     '''
-
+    # add the flag for this serializing instruction that enters an exception, by shen
     smcIop = InstObjParams("smc", "Smc64", "ArmStaticInst",
-                           smcCode, ["IsNonSpeculative", "IsSerializeAfter"])
+                           smcCode, ["IsNonSpeculative", "IsSerializeAfter", "IsExceptionEntrySerializing"])
     header_output += BasicDeclare.subst(smcIop)
     decoder_output += BasicConstructor64.subst(smcIop)
     exec_output += BasicExecute.subst(smcIop)
@@ -121,16 +121,18 @@ let {{
     decoder_output += BasicConstructor64.subst(unknown64Iop)
     exec_output += BasicExecute.subst(unknown64Iop)
 
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     isbIop = InstObjParams("isb", "Isb64", "ArmStaticInst",
                            "fault = std::make_shared<FlushPipe>();",
-                           ['IsSerializeAfter'])
+                           ['IsSerializeAfter', 'IsExplicitSyncSerializing'])
     header_output += BasicDeclare.subst(isbIop)
     decoder_output += BasicConstructor64.subst(isbIop)
     exec_output += BasicExecute.subst(isbIop)
 
+    # add the flag for this serializing instruction that syncronizes the threads and co-processors, by shen
     dsbIop = InstObjParams("dsb", "Dsb64", "ArmStaticInst",
                            "fault = std::make_shared<FlushPipe>();",
-                           ['IsMemBarrier', 'IsSerializeAfter'])
+                           ['IsMemBarrier', 'IsSerializeAfter', 'IsExplicitSyncSerializing'])
     header_output += BasicDeclare.subst(dsbIop)
     decoder_output += BasicConstructor64.subst(dsbIop)
     exec_output += BasicExecute.subst(dsbIop)

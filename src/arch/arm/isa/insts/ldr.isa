@@ -123,7 +123,8 @@ let {{
 
             if self.writeback:
                 wbDecl = "MicroAddiUop(machInst, base, base, %d);" % wbDiff
-            self.emitHelper('RfeOp', wbDecl, ["IsSerializeAfter", "IsNonSpeculative"], pcDecl)
+            # add the flag for this serializing instruction that modifies CPRS, by shen
+            self.emitHelper('RfeOp', wbDecl, ["IsSerializeAfter", "IsNonSpeculative", "IsModifyProgramStatusSerializing"], pcDecl)
 
     class LoadImmInst(LoadInst):
         def __init__(self, *args, **kargs):

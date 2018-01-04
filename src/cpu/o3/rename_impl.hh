@@ -56,6 +56,7 @@
 #include "debug/Rename.hh"
 #include "debug/O3PipeView.hh"
 #include "params/DerivO3CPU.hh"
+#include <iostream>
 
 using namespace std;
 
@@ -78,6 +79,10 @@ DefaultRename<Impl>::DefaultRename(O3CPU *_cpu, DerivO3CPUParams *params)
 
     // @todo: Make into a parameter.
     skidBufferMax = (decodeToRenameDelay + 1) * params->decodeWidth;
+    
+    // init the flags, by shen
+    serialStallFlag = 0;
+    beforeAfterFlag = 0;
 }
 
 template <class Impl>
@@ -107,6 +112,58 @@ DefaultRename<Impl>::regStats()
         .name(name() + ".serializeStallCycles")
         .desc("count of cycles rename stalled for serializing inst")
         .flags(Stats::total);
+
+    // Registers of stall cycles due to different kinds of serializing instructions as well as the instruction number, by shen
+    exceptionEntryStallCycles
+        .name(name() + ".exceptionEntryStallCycles")
+        .desc("count of cycles rename stalled for exception entry serializing insts")
+        .flags(Stats::total);
+    modifyProgramStatusStallCycles
+        .name(name() + ".modifyProgramStatusStallCycles")
+        .desc("count of cycles rename stalled for modifying CPRS reg serializing insts")
+        .flags(Stats::total);
+    explicitSyncStallCycles
+        .name(name() + ".explicitSyncStallCycles")
+        .desc("count of cycles rename stalled for explicit syncronization serializing insts")
+        .flags(Stats::total);
+    otherStallCycles
+        .name(name() + ".otherStallCycles")
+        .desc("count of cycles rename stalled for other serializing insts")
+        .flags(Stats::total);
+    serializeBeforeStallCycles
+        .name(name() + ".serializeBeforeStallCycles")
+        .desc("count of cycles rename stalled for before serializing insts")
+        .flags(Stats::total);
+    serializeAfterStallCycles
+        .name(name() + ".serializeAfterStallCycles")
+        .desc("count of cycles rename stalled for after serializing insts")
+        .flags(Stats::total);
+    exceptionEntrySerialInstNum
+        .name(name() + ".exceptionEntrySerialInstNum")
+        .desc("the number of exception entry serializing insts")
+        .flags(Stats::total);
+    modifyProgramStatusSerialInstNum
+        .name(name() + ".modifyProgramStatusSerialInstNum")
+        .desc("the number of modifying CPSR registers serializing insts")
+        .flags(Stats::total);
+    explicitSyncSerialInstNum
+        .name(name() + ".explicitSyncSerialInstNum")
+        .desc("the number of explicit syncronization serializing insts")
+        .flags(Stats::total);
+    otherSerialInstNum
+        .name(name() + ".otherSerialInstNum")
+        .desc("the number of other serializing insts")
+        .flags(Stats::total); 
+    serializeBeforeNum
+        .name(name() + ".serializeBeforeNum")
+        .desc("the number of before serializing insts")
+        .flags(Stats::total); 
+    serializeAfterNum
+        .name(name() + ".serializeAfterNum")
+        .desc("the number of before serializing insts")
+        .flags(Stats::total); 
+    // end, by shen
+
     renameRunCycles
         .name(name() + ".RunCycles")
         .desc("Number of cycles rename is running")
@@ -460,6 +517,24 @@ DefaultRename<Impl>::rename(bool &status_change, ThreadID tid)
             block(tid);
             toDecode->renameUnblock[tid] = false;
         }
+
+        // count the stall cycles for different categories of serializing instructions, by shen
+        assert(beforeAfterFlag);
+        if (serialStallFlag == 1)
+            exceptionEntryStallCycles++;
+        else if (serialStallFlag == 2) 
+            modifyProgramStatusStallCycles++;
+        else if (serialStallFlag == 3) 
+            explicitSyncStallCycles++;
+        else if (serialStallFlag == 4) 
+            otherStallCycles++;
+        
+        if (beforeAfterFlag == 1)
+            serializeBeforeStallCycles++;
+        else if (beforeAfterFlag == 2)
+            serializeAfterStallCycles++;
+        // end, by shen
+
     } else if (renameStatus[tid] == Unblocking) {
         if (resumeUnblocking) {
             block(tid);
@@ -493,6 +568,10 @@ template <class Impl>
 void
 DefaultRename<Impl>::renameInsts(ThreadID tid)
 {
+    // when rename resumes running, clear the serializing stall flags. by shen
+    serialStallFlag = beforeAfterFlag = 0;
+    // end, by shen
+
     // Instructions can be either in the skid buffer or the queue of
     // instructions coming from decode, depending on the status.
     int insts_available = renameStatus[tid] == Unblocking ?
@@ -662,6 +741,29 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             if (!inst->isTempSerializeBefore()) {
                 renamedSerializing++;
                 inst->setSerializeHandled();
+                
+                // set the flag and count the number of instructions, by shen
+                serializeBeforeNum++;
+                beforeAfterFlag = 1;
+                if (inst->isExceptionEntrySerializing()) {
+                    serialStallFlag = 1;
+                    exceptionEntrySerialInstNum++;
+                }
+                else if (inst->isModifyProgramStatusSerializing()) {
+                    serialStallFlag = 2;
+                    modifyProgramStatusSerialInstNum++;
+                    std::cout << "before serialization, CPSR modifying" << std::endl;
+                }
+                else if (inst->isExplicitSyncSerializing()) {
+                    serialStallFlag = 3;
+                    explicitSyncSerialInstNum++;
+                }
+                else if (inst->isOtherSerializing()) {
+                    serialStallFlag = 4;
+                    otherSerialInstNum++;
+                }
+                // end, by shen
+
             } else {
                 renamedTempSerializing++;
             }
@@ -684,6 +786,28 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             inst->setSerializeHandled();
 
             serializeAfter(insts_to_rename, tid);
+
+            // set the flag and count the number of instructions, by shen
+            serializeAfterNum++;
+            beforeAfterFlag = 2;
+            if (inst->isExceptionEntrySerializing()) {
+                serialStallFlag = 1;
+                exceptionEntrySerialInstNum++;
+            }
+            else if (inst->isModifyProgramStatusSerializing()) {
+                serialStallFlag = 2;
+                modifyProgramStatusSerialInstNum++;
+                std::cout << "after serialization, CPSR modifying" << std::endl;
+            }
+            else if (inst->isExplicitSyncSerializing()) {
+                serialStallFlag = 3;
+                explicitSyncSerialInstNum++;
+            }
+            else if (inst->isOtherSerializing()) {
+                serialStallFlag = 4;
+                otherSerialInstNum++;
+            }
+            // end, by shen
         }
 
         renameSrcRegs(inst, inst->threadNumber);

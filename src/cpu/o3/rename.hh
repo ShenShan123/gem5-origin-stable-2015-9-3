@@ -511,6 +511,32 @@ class DefaultRename
     Stats::Scalar renamedTempSerializing;
     /** Number of instructions inserted into skid buffers. */
     Stats::Scalar renameSkidInsts;
+
+    // serializing stall flag, defined by shen
+    // serialStallFlag = 0 for non-serializing
+    // serialStallFlag = 1 for ExceptionEntry
+    // serialStallFlag = 2 for ModifyProgramStatus
+    // serialStallFlag = 3 for ExplicitSync
+    // serialStallFlag = 4 for Others
+    uint16_t serialStallFlag;
+    // beforeAfterFlag = 0 for non-serializing
+    // beforeAfterFlag = 1 for before
+    // beforeAfterFlag = 2 for after
+    uint16_t beforeAfterFlag;
+    // the scalars for serializing stall cycles
+    Stats::Scalar exceptionEntryStallCycles;
+    Stats::Scalar modifyProgramStatusStallCycles;
+    Stats::Scalar explicitSyncStallCycles;
+    Stats::Scalar otherStallCycles;
+    Stats::Scalar serializeBeforeStallCycles;
+    Stats::Scalar serializeAfterStallCycles;
+    Stats::Scalar exceptionEntrySerialInstNum;
+    Stats::Scalar modifyProgramStatusSerialInstNum;
+    Stats::Scalar explicitSyncSerialInstNum;
+    Stats::Scalar otherSerialInstNum;
+    Stats::Scalar serializeBeforeNum;
+    Stats::Scalar serializeAfterNum;
+    // end, by shen
 };
 
 #endif // __CPU_O3_RENAME_HH__

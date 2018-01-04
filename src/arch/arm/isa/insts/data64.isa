@@ -334,7 +334,7 @@ let {{
         %s
         XDest = MiscOp1_ud;
     ''' % (msrMrs64EnabledCheckCode % ('Read', 'true'),),
-        ["IsSerializeBefore"])
+        ["IsSerializeBefore","IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
 
     buildDataXRegInst("mrsNZCV", 1, '''
         CPSR cpsr = 0;
@@ -352,7 +352,7 @@ let {{
         %s
         MiscDest_ud = XOp1;
     ''' % (msrMrs64EnabledCheckCode % ('Write', 'false'),),
-        ["IsSerializeAfter", "IsNonSpeculative"])
+        ["IsSerializeAfter", "IsNonSpeculative","IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
 
     buildDataXRegInst("msrNZCV", 1, '''
         CPSR cpsr = XOp1;
@@ -397,7 +397,7 @@ let {{
                                                           mnemonic);
         }
         MiscDest_ud = imm;
-    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative"])
+    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative", "IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
 
     buildDataXImmInst("msrDAIFSet", '''
         if (!canWriteAArch64SysReg(
@@ -410,7 +410,7 @@ let {{
         CPSR cpsr = Cpsr;
         cpsr.daif = cpsr.daif | imm;
         Cpsr = cpsr;
-    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative"])
+    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative", "IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
 
     buildDataXImmInst("msrDAIFClr", '''
         if (!canWriteAArch64SysReg(
@@ -423,7 +423,7 @@ let {{
         CPSR cpsr = Cpsr;
         cpsr.daif = cpsr.daif & ~imm;
         Cpsr = cpsr;
-    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative"])
+    ''', optArgs = ["IsSerializeAfter", "IsNonSpeculative", "IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
 
     def buildDataXCompInst(mnem, instType, suffix, code):
         global header_output, decoder_output, exec_output

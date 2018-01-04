@@ -174,6 +174,13 @@ class StaticInst : public RefCounted, public StaticInstFlags
     bool isMicroBranch() const { return flags[IsMicroBranch]; }
     //@}
 
+    // return the category of serializing instructions, by shen
+    bool isExceptionEntrySerializing () const { return flags[IsExceptionEntrySerializing]; }
+    bool isModifyProgramStatusSerializing () const { return flags[IsModifyProgramStatusSerializing]; }
+    bool isExplicitSyncSerializing () const { return flags[IsExplicitSyncSerializing]; }
+    bool isOtherSerializing () const { return flags[IsOtherSerializing]; }
+    // end, by shen
+
     void setFirstMicroop() { flags[IsFirstMicroop] = true; }
     void setLastMicroop() { flags[IsLastMicroop] = true; }
     void setDelayedCommit() { flags[IsDelayedCommit] = true; }

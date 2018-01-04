@@ -108,5 +108,12 @@ class StaticInstFlags(Enum):
         'IsMicroBranch',    # This microop branches within the microcode for
                             # a macroop
         'IsDspOp',
-        'IsSquashAfter'     # Squash all uncommitted state after executed
+        'IsSquashAfter',     # Squash all uncommitted state after executed
+
+        # To classify serializing instructions, by shen
+        'IsExceptionEntrySerializing',      # Entering a excpetion 
+        'IsModifyProgramStatusSerializing', # Modify SPSR/CPSR registers or program control
+        'IsExplicitSyncSerializing',        # Explicit Synchronization, including memory barriers
+        'IsOtherSerializing'                # other serializing insts...
+        # end
         ]

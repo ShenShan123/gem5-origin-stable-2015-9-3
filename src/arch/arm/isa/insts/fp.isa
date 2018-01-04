@@ -194,12 +194,12 @@ let {{
     vmsrCode = vmsrEnabledCheckCode + '''
     MiscDest = Op1;
     '''
-
+    # add the flag for this serializing instruction that modifies CPRS, by shen
     vmsrIop = InstObjParams("vmsr", "Vmsr", "FpRegRegImmOp",
                             { "code": vmsrCode,
                               "predicate_test": predicateTest,
                               "op_class": "SimdFloatMiscOp" },
-                             ["IsSerializeAfter","IsNonSpeculative"])
+                             ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing"])
     header_output += FpRegRegImmOpDeclare.subst(vmsrIop);
     decoder_output += FpRegRegImmOpConstructor.subst(vmsrIop);
     exec_output += PredOpExecute.subst(vmsrIop);
@@ -212,8 +212,8 @@ let {{
                                  { "code": vmsrFpscrCode,
                                    "predicate_test": predicateTest,
                                    "op_class": "SimdFloatMiscOp" },
-                                 ["IsSerializeAfter","IsNonSpeculative",
-                                  "IsSquashAfter"])
+                                 ["IsSerializeAfter","IsNonSpeculative", "IsModifyProgramStatusSerializing", 
+                                  "IsSquashAfter"]) # add the flag for this serializing instruction that modifies CPRS, by shen
     header_output += FpRegRegOpDeclare.subst(vmsrFpscrIop);
     decoder_output += FpRegRegOpConstructor.subst(vmsrFpscrIop);
     exec_output += PredOpExecute.subst(vmsrFpscrIop);
@@ -245,7 +245,7 @@ let {{
                             { "code": vmrsCode,
                               "predicate_test": predicateTest,
                               "op_class": "SimdFloatMiscOp" },
-                            ["IsSerializeBefore"])
+                            ["IsSerializeBefore", "IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
     header_output += FpRegRegImmOpDeclare.subst(vmrsIop);
     decoder_output += FpRegRegImmOpConstructor.subst(vmrsIop);
     exec_output += PredOpExecute.subst(vmrsIop);
@@ -255,7 +255,7 @@ let {{
                                            "Dest = Fpscr | FpCondCodes;",
                                    "predicate_test": predicateTest,
                                    "op_class": "SimdFloatMiscOp" },
-                                 ["IsSerializeBefore"])
+                                 ["IsSerializeBefore","IsModifyProgramStatusSerializing"]) # add the flag for this serializing instruction that modifies CPRS, by shen
     header_output += FpRegRegOpDeclare.subst(vmrsFpscrIop);
     decoder_output += FpRegRegOpConstructor.subst(vmrsFpscrIop);
     exec_output += PredOpExecute.subst(vmrsFpscrIop);
