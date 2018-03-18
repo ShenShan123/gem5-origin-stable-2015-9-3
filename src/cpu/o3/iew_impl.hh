@@ -91,7 +91,9 @@ DefaultIEW<Impl>::DefaultIEW(O3CPU *_cpu, DerivO3CPUParams *params)
         fatal("wbWidth (%d) is larger than compiled limit (%d),\n"
              "\tincrease MaxWidth in src/cpu/o3/impl.hh\n",
              wbWidth, static_cast<int>(Impl::MaxWidth));
-
+    // by shen
+    std::cout << "width=" << issueWidth << std::endl;
+    
     _status = Active;
     exeStatus = Running;
     wbStatus = Idle;

@@ -570,7 +570,10 @@ void
 DefaultRename<Impl>::renameInsts(ThreadID tid)
 {
     // when rename resumes running, clear the serializing stall flags. by shen
-    serialStallFlag = beforeAfterFlag = 0;
+    // there is one exception that last inst is a serialzeAfter inst, 
+    // so the current inst is set to a temp serializing instruction, and keep the flags
+    if (!fromSerializeAfterInst)
+        serialStallFlag = beforeAfterFlag = 0;
     // end, by shen
 
     // Instructions can be either in the skid buffer or the queue of
@@ -753,7 +756,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 else if (inst->isModifyProgramStatusSerializing()) {
                     serialStallFlag = 2;
                     modifyProgramStatusSerialInstNum++;
-                    std::cout << "before serialization, CPSR modifying" << std::endl;
+                    //std::cout << "before serialization, CPSR modifying" << std::endl;
                 }
                 else if (inst->isExplicitSyncSerializing()) {
                     serialStallFlag = 3;
@@ -765,8 +768,6 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                     serialStallFlag = 4;
                     otherSerialInstNum++;
                 }
-                
-                fromSerializeAfterInst = true;
                 // end, by shen
 
             } else {
@@ -803,7 +804,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             else if (inst->isModifyProgramStatusSerializing()) {
                 serialStallFlag = 2;
                 modifyProgramStatusSerialInstNum++;
-                std::cout << "after serialization, CPSR modifying" << std::endl;
+                //std::cout << "after serialization, CPSR modifying" << std::endl;
             }
             else if (inst->isExplicitSyncSerializing()) {
                 serialStallFlag = 3;
@@ -1508,8 +1509,6 @@ DefaultRename<Impl>::serializeAfter(InstQueue &inst_list, ThreadID tid)
 
     // Set the next instruction as serializing.
     inst_list.front()->setSerializeBefore();
-    // set the next instruction to be serialzed, by shen
-    fromSerializeAfterInst = true;
 }
 
 template <class Impl>

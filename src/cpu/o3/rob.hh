@@ -85,6 +85,8 @@ class ROB
     };
 
   private:
+    /* add the friend class DefaultCommit to calculate the critical path length, by shen */
+    friend class DefaultCommit<Impl>;
     /** Per-thread ROB status. */
     Status robStatus[Impl::MaxThreads];
 

@@ -57,6 +57,12 @@ def _listMemTypes(option, opt, value, parser):
     sys.exit(0)
 
 def addCommonOptions(parser):
+    # DerivO3 config options, add by shen 
+    parser.add_option("--ROBentry", type="int", default=128, help="number of ROB entries")
+    parser.add_option("--cpu-width", type="int", default=8, help="the whole cpu width")
+    parser.add_option("--LSQentry", type="int", default=32, help="number of LSQ entries")
+    parser.add_option("--IQentry", type="int", default=64, help="number of IQ entries")
+    parser.add_option("--RFentry", type="int", default=192, help="number of register file entries")
     # system options
     parser.add_option("--list-cpu-types",
                       action="callback", callback=_listCpuTypes,

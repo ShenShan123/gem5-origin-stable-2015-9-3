@@ -257,6 +257,24 @@ def build_drive_system(np):
 
     drive_sys.cpu = DriveCPUClass(clk_domain=drive_sys.cpu_clk_domain,
                                   cpu_id=0)
+    # add by shen
+    for cpu in drive_sys.cpu:
+        if CPUClass == DerivO3CPU:
+            cpu.numROBEntries = options.ROBentry
+            cpu.fetchWidth = options.cpu_width
+            cpu.decodeWidth = options.cpu_width
+            cpu.renameWidth = options.cpu_width
+            cpu.dispatchWidth = options.cpu_width
+            cpu.issueWidth = options.cpu_width
+            cpu.wbWidth = options.cpu_width
+            cpu.commitWidth = options.cpu_width
+            cpu.squashWidth = options.cpu_width
+            cpu.LQEntries = options.LSQentry
+            cpu.SQEntries = options.LSQentry
+            cpu.numIQEntries = options.IQentry
+            cpu.numPhysIntRegs = options.RFentry
+            cpu.numPhysFloatRegs = options.RFentry
+
     drive_sys.cpu.createThreads()
     drive_sys.cpu.createInterruptController()
     drive_sys.cpu.connectAllPorts(drive_sys.membus)

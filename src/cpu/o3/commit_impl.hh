@@ -107,7 +107,9 @@ DefaultCommit<Impl>::DefaultCommit(O3CPU *_cpu, DerivO3CPUParams *params)
       drainImminent(false),
       trapLatency(params->trapLatency),
       canHandleInterrupts(true),
-      avoidQuiesceLiveLock(false)
+      avoidQuiesceLiveLock(false),
+      /* init critical path with the number of physical registers, by shen */
+      criticalPath(params)
 {
     if (commitWidth > Impl::MaxWidth)
         fatal("commitWidth (%d) is larger than compiled limit (%d),\n"
@@ -285,6 +287,22 @@ DefaultCommit<Impl>::regStats()
         .name(name() + ".bw_lim_events")
         .desc("number cycles where commit BW limit reached")
         ;
+
+    /* critical path, by shen */
+    totCriticalPathLength
+        .name(name() + ".totCriticalPathLength")
+        .desc("Total critical path length when mis-branch enters ROB")
+        ;
+    numSerializingInsts
+        .name(name() + ".numSerializingInsts")
+        .desc("Total number of serializing instructions")
+        ;
+
+    avgCriticalPathLength
+        .name(name() + ".avgCriticalPathLength")
+        .desc("Average critical path length when mis-branch enters ROB");
+
+    avgCriticalPathLength = totCriticalPathLength / numSerializingInsts;
 }
 
 template <class Impl>
@@ -1319,11 +1337,23 @@ DefaultCommit<Impl>::getInsts()
             DPRINTF(Commit, "Inserting PC %s [sn:%i] [tid:%i] into ROB.\n",
                     inst->pcState(), inst->seqNum, tid);
 
+#ifdef CP
+            /* oh shit, it is really slow... , by shen */
+            if (inst->isExceptionEntrySerializing() || inst->isModifyProgramStatusSerializing() || inst->isExplicitSyncSerializing() || inst->isOtherSerializing()) 
+            //if (inst->isControl())
+            { // wait to modify
+                totCriticalPathLength += criticalPath.calcCriticalPathLength(rob->instList[tid]);
+                numSerializingInsts++;
+            }
+#endif
+
             rob->insertInst(inst);
 
             assert(rob->getThreadEntries(tid) <= rob->getMaxEntries(tid));
 
             youngestSeqNum[tid] = inst->seqNum;
+
+
         } else {
             DPRINTF(Commit, "Instruction PC %s [sn:%i] [tid:%i] was "
                     "squashed, skipping.\n",
