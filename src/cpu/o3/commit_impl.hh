@@ -303,6 +303,12 @@ DefaultCommit<Impl>::regStats()
         .desc("Average critical path length when mis-branch enters ROB");
 
     avgCriticalPathLength = totCriticalPathLength / numSerializingInsts;
+
+    robInstDistr
+        .init(40)
+        .name(name() + ".robInstDistr")
+        .desc("number of instructions in ROB when serializing instruction entering");
+    /* by shen */
 }
 
 template <class Impl>
@@ -1319,7 +1325,7 @@ void
 DefaultCommit<Impl>::getInsts()
 {
     DPRINTF(Commit, "Getting instructions from Rename stage.\n");
-
+    
     // Read any renamed instructions and place them into the ROB.
     int insts_to_process = std::min((int)renameWidth, fromRename->size);
 
@@ -1344,6 +1350,7 @@ DefaultCommit<Impl>::getInsts()
             { // wait to modify
                 totCriticalPathLength += criticalPath.calcCriticalPathLength(rob->instList[tid]);
                 numSerializingInsts++;
+                robInstDistr.sample(rob->instList[tid].size());
             }
 #endif
 

@@ -51,6 +51,7 @@
 #include "cpu/inst_seq.hh"
 #include "cpu/timebuf.hh"
 #include "sim/probe/probe.hh"
+/* add by shen */
 #include "base/calc_critical_path.hh"
 
 struct DerivO3CPUParams;
@@ -532,6 +533,7 @@ class DefaultCommit
     Stats::Scalar totCriticalPathLength;
     Stats::Scalar numSerializingInsts;
     Stats::Formula avgCriticalPathLength;
+    Stats::SparseHistogram robInstDistr;
 #define CP
     /* some flag and temp recrods and critical path instance, by shen*/
     CriticalPath<Impl> criticalPath;
