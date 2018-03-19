@@ -534,7 +534,7 @@ class DefaultCommit
     Stats::Scalar numSerializingInsts;
     Stats::Formula avgCriticalPathLength;
     Stats::SparseHistogram robInstDistr;
-#define CP
+//#define CP
     /* some flag and temp recrods and critical path instance, by shen*/
     CriticalPath<Impl> criticalPath;
 };

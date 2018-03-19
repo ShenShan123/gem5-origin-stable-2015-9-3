@@ -1325,7 +1325,7 @@ void
 DefaultCommit<Impl>::getInsts()
 {
     DPRINTF(Commit, "Getting instructions from Rename stage.\n");
-    
+
     // Read any renamed instructions and place them into the ROB.
     int insts_to_process = std::min((int)renameWidth, fromRename->size);
 
@@ -1343,16 +1343,16 @@ DefaultCommit<Impl>::getInsts()
             DPRINTF(Commit, "Inserting PC %s [sn:%i] [tid:%i] into ROB.\n",
                     inst->pcState(), inst->seqNum, tid);
 
-#ifdef CP
             /* oh shit, it is really slow... , by shen */
-            if (inst->isExceptionEntrySerializing() || inst->isModifyProgramStatusSerializing() || inst->isExplicitSyncSerializing() || inst->isOtherSerializing()) 
+            if (inst->isExceptionEntrySerializing() || inst->isModifyProgramStatusSerializing() || inst->isExplicitSyncSerializing()) 
             //if (inst->isControl())
             { // wait to modify
+#ifdef CP
                 totCriticalPathLength += criticalPath.calcCriticalPathLength(rob->instList[tid]);
+#endif
                 numSerializingInsts++;
                 robInstDistr.sample(rob->instList[tid].size());
             }
-#endif
 
             rob->insertInst(inst);
 
