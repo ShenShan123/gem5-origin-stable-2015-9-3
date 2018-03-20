@@ -107,9 +107,7 @@ DefaultCommit<Impl>::DefaultCommit(O3CPU *_cpu, DerivO3CPUParams *params)
       drainImminent(false),
       trapLatency(params->trapLatency),
       canHandleInterrupts(true),
-      avoidQuiesceLiveLock(false),
-      /* init critical path with the number of physical registers, by shen */
-      criticalPath(params)
+      avoidQuiesceLiveLock(false)
 {
     if (commitWidth > Impl::MaxWidth)
         fatal("commitWidth (%d) is larger than compiled limit (%d),\n"
@@ -287,28 +285,6 @@ DefaultCommit<Impl>::regStats()
         .name(name() + ".bw_lim_events")
         .desc("number cycles where commit BW limit reached")
         ;
-
-    /* critical path, by shen */
-    totCriticalPathLength
-        .name(name() + ".totCriticalPathLength")
-        .desc("Total critical path length when mis-branch enters ROB")
-        ;
-    numSerializingInsts
-        .name(name() + ".numSerializingInsts")
-        .desc("Total number of serializing instructions")
-        ;
-
-    avgCriticalPathLength
-        .name(name() + ".avgCriticalPathLength")
-        .desc("Average critical path length when mis-branch enters ROB");
-
-    avgCriticalPathLength = totCriticalPathLength / numSerializingInsts;
-
-    robInstDistr
-        .init(40)
-        .name(name() + ".robInstDistr")
-        .desc("number of instructions in ROB when serializing instruction entering");
-    /* by shen */
 }
 
 template <class Impl>
@@ -401,6 +377,8 @@ DefaultCommit<Impl>::startupStage()
     for (ThreadID tid = 0; tid < numThreads; tid++) {
         toIEW->commitInfo[tid].usedROB = true;
         toIEW->commitInfo[tid].freeROBEntries = rob->numFreeEntries(tid);
+        /* calculate the number of used entries in ROB partition, by shen */
+        toIEW->commitInfo[tid].usedROBEntries = rob->getThreadEntries(tid);
         toIEW->commitInfo[tid].emptyROB = true;
     }
 
@@ -956,7 +934,8 @@ DefaultCommit<Impl>::commit()
         if (changedROBNumEntries[tid]) {
             toIEW->commitInfo[tid].usedROB = true;
             toIEW->commitInfo[tid].freeROBEntries = rob->numFreeEntries(tid);
-
+            /* calculate the number of used entries in ROB partition, by shen */
+            toIEW->commitInfo[tid].usedROBEntries = rob->getThreadEntries(tid);
             wroteToTimeBuffer = true;
             changedROBNumEntries[tid] = false;
             if (rob->isEmpty(tid))
@@ -977,6 +956,8 @@ DefaultCommit<Impl>::commit()
             toIEW->commitInfo[tid].usedROB = true;
             toIEW->commitInfo[tid].emptyROB = true;
             toIEW->commitInfo[tid].freeROBEntries = rob->numFreeEntries(tid);
+            /* calculate the number of used entries in ROB partition, by shen */
+            toIEW->commitInfo[tid].usedROBEntries = rob->getThreadEntries(tid);
             wroteToTimeBuffer = true;
         }
 
@@ -1343,23 +1324,11 @@ DefaultCommit<Impl>::getInsts()
             DPRINTF(Commit, "Inserting PC %s [sn:%i] [tid:%i] into ROB.\n",
                     inst->pcState(), inst->seqNum, tid);
 
-            /* oh shit, it is really slow... , by shen */
-            if (inst->isExceptionEntrySerializing() || inst->isModifyProgramStatusSerializing() || inst->isExplicitSyncSerializing()) 
-            //if (inst->isControl())
-            { // wait to modify
-#ifdef CP
-                totCriticalPathLength += criticalPath.calcCriticalPathLength(rob->instList[tid]);
-#endif
-                numSerializingInsts++;
-                robInstDistr.sample(rob->instList[tid].size());
-            }
-
             rob->insertInst(inst);
 
             assert(rob->getThreadEntries(tid) <= rob->getMaxEntries(tid));
 
             youngestSeqNum[tid] = inst->seqNum;
-
 
         } else {
             DPRINTF(Commit, "Instruction PC %s [sn:%i] [tid:%i] was "

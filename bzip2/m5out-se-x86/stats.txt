@@ -4,11 +4,11 @@ sim_seconds                                  0.009422                       # Nu
 sim_ticks                                  9422075500                       # Number of ticks simulated
 final_tick                                 9422075500                       # Number of ticks from beginning of simulation (restored from checkpoints and never reset)
 sim_freq                                 1000000000000                       # Frequency of simulated ticks
-host_inst_rate                                  91395                       # Simulator instruction rate (inst/s)
-host_op_rate                                   129879                       # Simulator op (including micro ops) rate (op/s)
-host_tick_rate                              810919896                       # Simulator tick rate (ticks/s)
-host_mem_usage                                 649208                       # Number of bytes of host memory used
-host_seconds                                    11.62                       # Real time elapsed on the host
+host_inst_rate                                  92761                       # Simulator instruction rate (inst/s)
+host_op_rate                                   131821                       # Simulator op (including micro ops) rate (op/s)
+host_tick_rate                              823046273                       # Simulator tick rate (ticks/s)
+host_mem_usage                                 649216                       # Number of bytes of host memory used
+host_seconds                                    11.45                       # Real time elapsed on the host
 sim_insts                                     1061912                       # Number of instructions simulated
 sim_ops                                       1509062                       # Number of ops (including micro ops) simulated
 system.voltage_domain.voltage                       1                       # Voltage in Volts
@@ -361,6 +361,196 @@ system.cpu.rename.explicitSyncSerialInstNum            0                       #
 system.cpu.rename.otherSerialInstNum                0                       # the number of other serializing insts
 system.cpu.rename.serializeBeforeNum                0                       # the number of before serializing insts
 system.cpu.rename.serializeAfterNum                33                       # the number of before serializing insts
+system.cpu.rename.totCriticalPathLength             0                       # Total critical path length when mis-branch enters ROB
+system.cpu.rename.numSerializingInsts               0                       # Total number of serializing instructions
+system.cpu.rename.avgCriticalPathLength           nan                       # Average critical path length when mis-branch enters ROB
+system.cpu.rename.robInstDistr::samples       1622294                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::0              616034                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::1               35897                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::2              181295                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::3               98499                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::4                7589                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::5                 343                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::6               36557                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::7                9314                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::8               15119                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::9              158447                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::10              40310                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::11              25838                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::12              78641                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::13               8470                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::14              50873                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::15               1255                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::16               5462                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::17              14306                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::18               6260                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::19               6554                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::20                303                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::21                267                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::22               1171                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::23                382                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::24               1935                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::25                330                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::26               2175                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::27                502                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::28                404                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::29                523                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::30               1212                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::31                733                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::32                761                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::33               2079                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::34                427                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::35                333                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::36                347                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::37               1245                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::38                281                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::39                440                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::40               2206                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::41                295                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::42                445                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::43              20064                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::44              15071                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::45               1115                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::46               4577                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::47                196                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::48                198                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::49                285                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::50                208                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::51              27671                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::52               3542                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::53               5980                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::54                556                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::55               5019                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::56               1332                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::57               5203                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::58              18575                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::59                130                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::60              31638                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::61                266                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::62                 57                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::63                 76                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::64                 82                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::65                138                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::66               1311                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::67               1731                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::68               1147                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::69               1253                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::70               4108                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::71               1221                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::72               4932                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::73               1242                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::74              11583                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::75                860                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::76              10850                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::77                 41                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::78                 34                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::79                641                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::80                 16                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::81                 72                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::82                833                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::83                 67                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::84                 75                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::85                 46                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::86                 28                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::87                720                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::88                 26                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::89                 57                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::90               1432                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::91                 31                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::92                 37                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::93                 30                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::94                 25                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::95                689                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::96                 25                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::97               1427                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::98                 33                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::99                 10                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::100                49                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::101                42                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::102               637                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::103                37                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::104               757                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::105              1446                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::106                36                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::107                43                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::108                41                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::109                24                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::110               656                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::111               753                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::112               679                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::113                27                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::114                46                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::115                 9                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::116                33                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::117               647                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::118                60                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::119                23                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::120               682                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::121                51                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::122                37                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::123                30                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::124                21                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::125               645                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::126                21                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::127               702                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::128                13                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::129                38                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::130                44                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::131                 9                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::132               647                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::133                13                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::134                26                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::135               674                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::136                 9                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::137                24                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::138                21                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::139                20                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::140               635                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::141                 9                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::142               680                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::143                22                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::144                 3                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::145                32                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::146                16                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::147               624                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::148                 8                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::149                16                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::150               669                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::151                16                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::152                 1                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::153                 5                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::154                16                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::155               640                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::156                 8                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::157               659                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::158                20                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::159                12                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::160                 7                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::162               648                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::163                29                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::164                13                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::165               657                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::166                 1                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::167                11                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::170               646                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::171                27                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::172               661                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::173                11                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::175                10                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::176               177                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::177               623                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::178                 7                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::179                22                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::180               320                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::182                 5                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::183                24                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::184                30                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::185                11                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::186                 6                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::187                 3                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::188                 6                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::190                 1                       # number of instructions in ROB when serializing instruction is identified
+system.cpu.rename.robInstDistr::191                 4                       # number of instructions in ROB when serializing instruction is identified
 system.cpu.memDep0.insertedLoads               362954                       # Number of loads inserted to the mem dependence unit.
 system.cpu.memDep0.insertedStores              328359                       # Number of stores inserted to the mem dependence unit.
 system.cpu.memDep0.conflictingLoads               220                       # Number of conflicting loads.
@@ -577,10 +767,6 @@ system.cpu.commit.op_class_0::IprAccess             0      0.00%    100.00% # Cl
 system.cpu.commit.op_class_0::InstPrefetch            0      0.00%    100.00% # Class of committed instruction
 system.cpu.commit.op_class_0::total           1509062                       # Class of committed instruction
 system.cpu.commit.bw_lim_events                 26213                       # number cycles where commit BW limit reached
-system.cpu.commit.totCriticalPathLength             0                       # Total critical path length when mis-branch enters ROB
-system.cpu.commit.numSerializingInsts               0                       # Total number of serializing instructions
-system.cpu.commit.avgCriticalPathLength           nan                       # Average critical path length when mis-branch enters ROB
-system.cpu.commit.robInstDistr::samples             0                       # number of instructions in ROB when serializing instruction entering
 system.cpu.rob.rob_reads                     20342995                       # The number of ROB reads
 system.cpu.rob.rob_writes                     3146524                       # The number of ROB writes
 system.cpu.timesIdled                             275                       # Number of times that the entire CPU went into an idle state and unscheduled itself

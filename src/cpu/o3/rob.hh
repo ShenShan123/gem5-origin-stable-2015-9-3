@@ -85,8 +85,8 @@ class ROB
     };
 
   private:
-    /* add the friend class DefaultCommit to calculate the critical path length, by shen */
-    friend class DefaultCommit<Impl>;
+    /* add the friend class DefaultRename to calculate the critical path length when serializing instruction is identified, by shen */
+    friend class DefaultRename<Impl>;
     /** Per-thread ROB status. */
     Status robStatus[Impl::MaxThreads];
 

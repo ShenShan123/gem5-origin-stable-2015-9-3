@@ -49,6 +49,8 @@
 #include "base/statistics.hh"
 #include "config/the_isa.hh"
 #include "cpu/timebuf.hh"
+/* add by shen */
+#include "base/calc_critical_path.hh"
 
 struct DerivO3CPUParams;
 
@@ -525,7 +527,7 @@ class DefaultRename
     uint16_t beforeAfterFlag;
     // is from serializeAfterInsts?
     bool fromSerializeAfterInst;
-    // the scalars for serializing stall cycles
+    // the scalars for serializing stall cycles, by shen
     Stats::Scalar exceptionEntryStallCycles;
     Stats::Scalar modifyProgramStatusStallCycles;
     Stats::Scalar explicitSyncStallCycles;
@@ -538,6 +540,14 @@ class DefaultRename
     Stats::Scalar otherSerialInstNum;
     Stats::Scalar serializeBeforeNum;
     Stats::Scalar serializeAfterNum;
+
+    Stats::Scalar totCriticalPathLength;
+    Stats::Scalar numSerializingInsts;
+    Stats::Formula avgCriticalPathLength;
+    Stats::SparseHistogram robInstDistr;
+//#define CP
+    /* some flag and temp recrods and critical path instance, by shen*/
+    CriticalPath<Impl> criticalPath;
     // end, by shen
 };
 

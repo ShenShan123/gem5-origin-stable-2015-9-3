@@ -51,8 +51,6 @@
 #include "cpu/inst_seq.hh"
 #include "cpu/timebuf.hh"
 #include "sim/probe/probe.hh"
-/* add by shen */
-#include "base/calc_critical_path.hh"
 
 struct DerivO3CPUParams;
 
@@ -528,15 +526,6 @@ class DefaultCommit
 
     /** Number of cycles where the commit bandwidth limit is reached. */
     Stats::Scalar commitEligibleSamples;
-
-    /* statistics for branch resolution time, by shen */
-    Stats::Scalar totCriticalPathLength;
-    Stats::Scalar numSerializingInsts;
-    Stats::Formula avgCriticalPathLength;
-    Stats::SparseHistogram robInstDistr;
-//#define CP
-    /* some flag and temp recrods and critical path instance, by shen*/
-    CriticalPath<Impl> criticalPath;
 };
 
 #endif // __CPU_O3_COMMIT_HH__

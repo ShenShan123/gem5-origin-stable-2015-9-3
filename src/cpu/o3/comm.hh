@@ -201,6 +201,9 @@ struct TimeBufStruct {
         /// Tell Rename how many free entries it has in the ROB
         unsigned freeROBEntries; // *R
 
+        // tell rename how many used entries it has in the ROB, by shen
+        unsigned usedROBEntries;
+
         bool squash; // *F, D, R, I
         bool robSquashing; // *F, D, R, I
 

@@ -70,7 +70,9 @@ DefaultRename<Impl>::DefaultRename(O3CPU *_cpu, DerivO3CPUParams *params)
       commitWidth(params->commitWidth),
       numThreads(params->numThreads),
       maxPhysicalRegs(params->numPhysIntRegs + params->numPhysFloatRegs
-                      + params->numPhysCCRegs)
+                      + params->numPhysCCRegs),
+      /* init critical path with the number of physical registers, by shen */
+      criticalPath(params)
 {
     if (renameWidth > Impl::MaxWidth)
         fatal("renameWidth (%d) is larger than compiled limit (%d),\n"
@@ -240,6 +242,28 @@ DefaultRename<Impl>::regStats()
         .name(name() + ".fp_rename_lookups")
         .desc("Number of floating rename lookups")
         .prereq(fpRenameLookups);
+
+    /* critical path, by shen */
+    totCriticalPathLength
+        .name(name() + ".totCriticalPathLength")
+        .desc("Total critical path length when mis-branch enters ROB")
+        ;
+    numSerializingInsts
+        .name(name() + ".numSerializingInsts")
+        .desc("Total number of serializing instructions")
+        ;
+
+    avgCriticalPathLength
+        .name(name() + ".avgCriticalPathLength")
+        .desc("Average critical path length when mis-branch enters ROB");
+
+    avgCriticalPathLength = totCriticalPathLength / numSerializingInsts;
+
+    robInstDistr
+        .init(40)
+        .name(name() + ".robInstDistr")
+        .desc("number of instructions in ROB when serializing instruction is identified");
+    /* by shen */
 }
 
 template <class Impl>
@@ -781,6 +805,18 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             serializeInst[tid] = inst;
 
             blockThisCycle = true;
+
+            /* caculate the CP length and distribution of instructions in ROB, by shen */
+            /* oh shit, it is really slow... */
+            if (inst->isExceptionEntrySerializing() || inst->isModifyProgramStatusSerializing() || inst->isExplicitSyncSerializing()) 
+            { // wait to modify
+#ifdef CP
+                totCriticalPathLength += criticalPath.calcCriticalPathLength(rob->instList[tid]);
+#endif
+                numSerializingInsts++;
+                robInstDistr.sample(fromCommit->commitInfo[tid].usedROBEntries);
+            }
+            // end, by shen
 
             break;
         } else if ((inst->isStoreConditional() || inst->isSerializeAfter()) &&
