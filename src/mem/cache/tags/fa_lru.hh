@@ -204,7 +204,7 @@ public:
      * @param asid The address space ID.
      * @return Pointer to the cache block.
      */
-    CacheBlk* findBlock(Addr addr, bool is_secure) const;
+    CacheBlk* findBlock(Addr addr, bool is_secure);
 
     /**
      * Find a replacement block for the address provided.

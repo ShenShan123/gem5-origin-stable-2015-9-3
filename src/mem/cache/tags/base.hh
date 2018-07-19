@@ -135,6 +135,16 @@ class BaseTags : public ClockedObject
     /** Number of data blocks consulted over all accesses. */
     Stats::Scalar dataAccesses;
 
+    // by shen
+    Stats::SparseHistogram sameBitsHitDistr;
+    Stats::SparseHistogram sameBitsMisDistr;
+    Stats::SparseHistogram diffBitFreq;
+    Stats::SparseHistogram offWays;
+    Stats::SparseHistogram fakeMisses;
+    Stats::Scalar fakeHits;
+    Stats::Scalar setReads;
+    // end
+
     /**
      * @}
      */
@@ -184,7 +194,7 @@ class BaseTags : public ClockedObject
     /**
      * Find a block using the memory address
      */
-    virtual CacheBlk * findBlock(Addr addr, bool is_secure) const = 0;
+    virtual CacheBlk * findBlock(Addr addr, bool is_secure) = 0;
 
     /**
      * Calculate the block offset of an address.

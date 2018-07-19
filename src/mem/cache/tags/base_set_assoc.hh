@@ -177,7 +177,9 @@ public:
     {
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
-        BlkType *blk = sets[set].findBlk(tag, is_secure);
+        BlkType *blk = sets[set].findBlk(tag, is_secure, &diffBitFreq, 
+            &sameBitsHitDistr, &sameBitsMisDistr, &offWays, &fakeMisses, &fakeHits);
+        setReads++;
         lat = accessLatency;;
 
         // Access all tags in parallel, hence one in each way.  The data side
@@ -212,7 +214,7 @@ public:
      * @param asid The address space ID.
      * @return Pointer to the cache block if found.
      */
-    CacheBlk* findBlock(Addr addr, bool is_secure) const;
+    CacheBlk* findBlock(Addr addr, bool is_secure);
 
     /**
      * Find an invalid block to evict for the address provided.

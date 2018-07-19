@@ -213,7 +213,7 @@ FALRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int context_src,
 
 
 CacheBlk*
-FALRU::findBlock(Addr addr, bool is_secure) const
+FALRU::findBlock(Addr addr, bool is_secure)
 {
     Addr blkAddr = blkAlign(addr);
     FALRUBlk* blk = hashLookup(blkAddr);

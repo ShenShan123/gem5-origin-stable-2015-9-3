@@ -158,6 +158,41 @@ BaseTags::regStats()
         .desc("Number of data accesses")
         ;
 
+    // add by shen
+    sameBitsHitDistr
+        .init(0)
+        .name(name() + ".same_bits_hit_distr")
+        .desc("hamming dist for tag hits");
+
+    sameBitsMisDistr
+        .init(0)
+        .name(name() + ".same_bits_mis_distr")
+        .desc("hamming dist for tag misses");
+
+    diffBitFreq
+        .init(0)
+        .name(name() + ".diff_bit_freq")
+        .desc("frequency of different tag bits");
+
+    offWays
+        .init(0)
+        .name(name() + ".off_ways")
+        .desc("num of ways that are turned off");
+
+    fakeMisses
+        .init(0)
+        .name(name() + ".fake_misses")
+        .desc("the hit ways that are turned off");
+
+    fakeHits
+        .name(name() + ".fake_hits")
+        .desc("fake hits due to speculation");
+
+    setReads
+        .name(name() + ".set_reads")
+        .desc("num of set reads");
+    // end
+
     registerDumpCallback(new BaseTagsDumpCallback(this));
     registerExitCallback(new BaseTagsCallback(this));
 }
