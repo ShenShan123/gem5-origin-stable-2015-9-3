@@ -177,8 +177,8 @@ public:
     {
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
-        BlkType *blk = sets[set].findBlk(tag, is_secure, &diffBitFreq, 
-            &sameBitsHitDistr, &sameBitsMisDistr, &offWays, &fakeMisses, &fakeHits);
+        BlkType *blk = sets[set].findBlk(tag, is_secure, diffBitFreq, 
+            sameBitsHitDistr, sameBitsMisDistr, offWays, fakeMisses, fakeHits);
         setReads++;
         lat = accessLatency;;
 
