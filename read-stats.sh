@@ -14,7 +14,7 @@ awk '/icache.tags.diff_bit_freq::[0-9].*/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
 awk '/icache.tags.off_ways::[0-9].*/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
-awk '/icache.tags.fake_misse::[0-9].*s/{print $2}' ${filename} >> temp.txt
+awk '/icache.tags.fake_misses::[0-9].*/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
 awk '/icache.tags.fake_hits/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
@@ -52,7 +52,7 @@ awk '/l2.tags.off_ways::[0-9].*/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
 awk '/l2.tags.fake_misses::[0-9].*/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
-awk '/l2.tags.fake_hits::[0-9].*/{print $2}' ${filename} >> temp.txt
+awk '/l2.tags.fake_hits/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
 awk '/l2.tags.set_reads/{print $2}' ${filename} >> temp.txt
 echo "===" >> temp.txt
@@ -65,7 +65,6 @@ while read line
 do
 	if [[ "$line" == "cache" ]];then
 		echo "${line}" >> distr.txt
-		echo "K" >> distr.txt
 	elif [[ "$line" == "===" ]];then
 		echo "${tmpstr}" >> distr.txt
 		tmpstr=''

@@ -177,10 +177,18 @@ public:
     {
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
-        BlkType *blk = sets[set].findBlk(tag, is_secure, diffBitFreq, 
-            sameBitsHitDistr, sameBitsMisDistr, offWays, fakeMisses, fakeHits);
+        // change by shen
+        bool error = false;
+        BlkType *blk = sets[set].findBlk(tag, is_secure, /*diffBitFreq, sameBitsHitDistr, 
+            sameBitsMisDistr,*/ offWays, fakeMisses, fakeHits, error, tagMisSpec, totTagMisSpec, dataWrong, hitDataWrong);
+        
         setReads++;
-        lat = accessLatency;;
+
+        lat = accessLatency;
+        if (error && (name() == "system.cpu.icache.tags" || name() == "system.cpu.dcache.tags")) {
+            ++lat;
+        }
+        // end
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on

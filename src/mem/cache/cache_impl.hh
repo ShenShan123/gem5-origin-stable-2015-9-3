@@ -1098,6 +1098,9 @@ Cache::recvTimingResp(PacketPtr pkt)
     CacheBlk *blk = tags->findBlock(pkt->getAddr(), pkt->isSecure());
     int stats_cmd_idx = initial_tgt->pkt->cmdToIndex();
     Tick miss_latency = curTick() - initial_tgt->recvTime;
+
+    //inform("calling recvTimingReq(), miss lat %ld", miss_latency / clockPeriod());
+
     PacketList writebacks;
     // We need forward_time here because we have a call of
     // allocateWriteBuffer() that need this parameter to specify the

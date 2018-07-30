@@ -159,7 +159,7 @@ BaseTags::regStats()
         ;
 
     // add by shen
-    sameBitsHitDistr
+    /*sameBitsHitDistr
         .init(64)
         .name(name() + ".same_bits_hit_distr")
         .desc("hamming dist for tag hits")
@@ -175,19 +175,19 @@ BaseTags::regStats()
         .init(64)
         .name(name() + ".diff_bit_freq")
         .desc("frequency of different tag bits")
-        .flags(nozero | nonan);
+        .flags(nozero | nonan);*/
 
     offWays
         .init(10)
         .name(name() + ".off_ways")
         .desc("num of ways that are turned off")
-        .flags(nozero | nonan);
+        .flags(nonan);
 
     fakeMisses
         .init(10)
         .name(name() + ".fake_misses")
         .desc("the hit ways that are turned off")
-        .flags(nozero | nonan);
+        .flags(nonan);
 
     fakeHits
         .name(name() + ".fake_hits")
@@ -196,6 +196,30 @@ BaseTags::regStats()
     setReads
         .name(name() + ".set_reads")
         .desc("num of set reads");
+
+    tagMisSpec
+        .init(10)
+        .name(name() + ".tag_misspec")
+        .desc("num of wrong tag reads")
+        .flags(nonan);
+    
+    totTagMisSpec
+        .init(10)
+        .name(name() + ".tot_tag_misspec")
+        .desc("total num of wrong tag reads")
+        .flags(nonan);
+
+    dataWrong
+        .init(10)
+        .name(name() + ".data_wrong")
+        .desc("num of wrong data reads")
+        .flags(nonan);
+    
+    hitDataWrong
+        .init(10)
+        .name(name() + ".hit_data_wrong")
+        .desc("num of wrong data that way is hit")
+        .flags(nonan);
     // end
 
     registerDumpCallback(new BaseTagsDumpCallback(this));

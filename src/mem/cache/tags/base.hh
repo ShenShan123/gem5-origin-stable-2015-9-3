@@ -136,13 +136,17 @@ class BaseTags : public ClockedObject
     Stats::Scalar dataAccesses;
 
     // by shen
-    Stats::Vector sameBitsHitDistr;
-    Stats::Vector sameBitsMisDistr;
-    Stats::Vector diffBitFreq;
+    //Stats::Vector sameBitsHitDistr;
+    //Stats::Vector sameBitsMisDistr;
+    //Stats::Vector diffBitFreq;
     Stats::Vector offWays;
     Stats::Vector fakeMisses;
     Stats::Scalar fakeHits;
     Stats::Scalar setReads;
+    Stats::Vector tagMisSpec;
+    Stats::Vector totTagMisSpec;
+    Stats::Vector dataWrong;
+    Stats::Vector hitDataWrong;
     // end
 
     /**

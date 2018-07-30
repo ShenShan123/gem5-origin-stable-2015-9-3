@@ -54,8 +54,10 @@
 #include <bitset>
 
 #include "mem/cache/blk.hh" // base class
+// added by shen
+#include "base/types.hh"
 #include "base/statistics.hh"
-
+// end
 /**
  * An associative set of cache blocks.
  */
@@ -81,11 +83,16 @@ class CacheSet
 
     // by shen
     Blktype* findBlk(Addr tag, bool is_secure, int& way_id, 
-        Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis, 
-        Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit);
+        /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
+        Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
+        bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+        Stats::Vector & dWrong, Stats::Vector & hdWrong);
+    
     Blktype* findBlk(Addr tag, bool is_secure, 
-        Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis, 
-        Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit);
+        /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
+        Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
+        bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+        Stats::Vector & dWrong, Stats::Vector & hdWrong);
     // end
 
     /**
@@ -144,8 +151,10 @@ inline int countBits(Addr n)
 template <class Blktype>
 Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
-    Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis, 
-    Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit)
+    /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
+    Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
+    bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+    Stats::Vector & dWrong, Stats::Vector & hdWrong)
 {
     /**
      * Way_id returns the id of the way that matches the block
@@ -159,7 +168,10 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine e (seed);
     std::uniform_real_distribution<double> unif(0.0,1.0);
-    double mispred = 0.01; // P(1 bit misprediction) = 0.0062
+    double bitError = 0.01; // P(1 bit bit error) = 0.0062
+    double tagErrorRate = 0.0088; // the tag mis-speculation in double sensing, P(tag error) = 0.0088
+    double dataErrorRate = 0.02; // default data is 64 bits, P(data error) = 0.0199
+    int numTagErrors[10] = {0};
     std::bitset<28> errorMask;
     // tag timing speculations
     int hamDist = -1;
@@ -172,17 +184,18 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
 
         // statistic the differency of tag bits
         // do tag differency distribution
-        Addr diffTag = blks[i]->tag ^ tag;
+        /*Addr diffTag = blks[i]->tag ^ tag;
+
         int shifts = 0;
         while (diffTag) {
             diff[shifts] += (diffTag & 1);
             ++shifts;
             diffTag = diffTag >> 1; // logical shift right
-        }
+        }*/
         // done here
 
         for (int j = 0; j < numTagBits; ++j)
-            errorMask[j] = mispred >= unif(e); // generate error bits
+            errorMask[j] = bitError >= unif(e); // generate error bits
             
         Addr mask = errorMask.to_ullong();
         specTag = mask ^ blks[i]->tag;
@@ -217,15 +230,64 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
         // actual miss but we speculate it as a hit
         faHit += specTag == tag && way_id == assoc;
 
+        double ter = unif(e);
+        double der = unif(e);
+        // tags will be mis-speculative when the ways are active
+        numTagErrors[0] += (ter < tagErrorRate) && !(hamDist > 0);
+        numTagErrors[1] += (ter < tagErrorRate) && !(hamDist > 1);
+        numTagErrors[2] += (ter < tagErrorRate) && !(hamDist > 2);
+        numTagErrors[3] += (ter < tagErrorRate) && !(hamDist > 3);
+        numTagErrors[4] += (ter < tagErrorRate) && !(hamDist > 4);
+        numTagErrors[5] += (ter < tagErrorRate) && !(hamDist > 5);
+        numTagErrors[6] += (ter < tagErrorRate) && !(hamDist > 6);
+        numTagErrors[7] += (ter < tagErrorRate) && !(hamDist > 7);
+        numTagErrors[8] += (ter < tagErrorRate) && !(hamDist > 8);
+        numTagErrors[9] += (ter < tagErrorRate) && !(hamDist > 9);
+
+        // data will be mis-speculative when the ways are active and the tags are read correctly
+        dWrong[0] += !(ter < tagErrorRate) && !(hamDist > 0) && (der < dataErrorRate);
+        dWrong[1] += !(ter < tagErrorRate) && !(hamDist > 1) && (der < dataErrorRate);
+        dWrong[2] += !(ter < tagErrorRate) && !(hamDist > 2) && (der < dataErrorRate);
+        dWrong[3] += !(ter < tagErrorRate) && !(hamDist > 3) && (der < dataErrorRate);
+        dWrong[4] += !(ter < tagErrorRate) && !(hamDist > 4) && (der < dataErrorRate);
+        dWrong[5] += !(ter < tagErrorRate) && !(hamDist > 5) && (der < dataErrorRate);
+        dWrong[6] += !(ter < tagErrorRate) && !(hamDist > 6) && (der < dataErrorRate);
+        dWrong[7] += !(ter < tagErrorRate) && !(hamDist > 7) && (der < dataErrorRate);
+        dWrong[8] += !(ter < tagErrorRate) && !(hamDist > 8) && (der < dataErrorRate);
+        dWrong[9] += !(ter < tagErrorRate) && !(hamDist > 9) && (der < dataErrorRate);
+
+        if (way_id == i) { // data mis-speculation will occur when the way is active and the tag is correct.
+            hdWrong[0] += !(ter < tagErrorRate) && !(hamDist > 0) && (der < dataErrorRate);
+            hdWrong[1] += !(ter < tagErrorRate) && !(hamDist > 1) && (der < dataErrorRate);
+            hdWrong[2] += !(ter < tagErrorRate) && !(hamDist > 2) && (der < dataErrorRate);
+            hdWrong[3] += !(ter < tagErrorRate) && !(hamDist > 3) && (der < dataErrorRate);
+            hdWrong[4] += !(ter < tagErrorRate) && !(hamDist > 4) && (der < dataErrorRate);
+            hdWrong[5] += !(ter < tagErrorRate) && !(hamDist > 5) && (der < dataErrorRate);
+            hdWrong[6] += !(ter < tagErrorRate) && !(hamDist > 6) && (der < dataErrorRate);
+            hdWrong[7] += !(ter < tagErrorRate) && !(hamDist > 7) && (der < dataErrorRate);
+            hdWrong[8] += !(ter < tagErrorRate) && !(hamDist > 8) && (der < dataErrorRate);
+            hdWrong[9] += !(ter < tagErrorRate) && !(hamDist > 9) && (der < dataErrorRate);
+        }
     }
 
-    for (int i = 0; i < assoc; ++i) {
+    tagMisSpec[0] += (numTagErrors[0] > 0); totTagMisSpec[0] += numTagErrors[0];
+    tagMisSpec[1] += (numTagErrors[1] > 0); totTagMisSpec[1] += numTagErrors[1];
+    tagMisSpec[2] += (numTagErrors[2] > 0); totTagMisSpec[2] += numTagErrors[2];
+    tagMisSpec[3] += (numTagErrors[3] > 0); totTagMisSpec[3] += numTagErrors[3];
+    tagMisSpec[4] += (numTagErrors[4] > 0); totTagMisSpec[4] += numTagErrors[4];
+    tagMisSpec[5] += (numTagErrors[5] > 0); totTagMisSpec[5] += numTagErrors[5];
+    tagMisSpec[6] += (numTagErrors[6] > 0); totTagMisSpec[6] += numTagErrors[6];
+    tagMisSpec[7] += (numTagErrors[7] > 0); totTagMisSpec[7] += numTagErrors[7];
+    tagMisSpec[8] += (numTagErrors[8] > 0); totTagMisSpec[8] += numTagErrors[8];
+    tagMisSpec[9] += (numTagErrors[9] > 0); totTagMisSpec[9] += numTagErrors[9];
+
+    /*for (int i = 0; i < assoc; ++i) {
         // hamming dist distribution when 
         // a hit in this set
         hit[countBits(blks[i]->tag ^ tag)] += (way_id != assoc);
         // a miss in this set
         mis[countBits(blks[i]->tag ^ tag)] += (way_id == assoc);
-    }
+    }*/
 
     if (way_id != assoc) return blks[way_id];
     return nullptr;
@@ -235,11 +297,14 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
 template <class Blktype>
 Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, 
-    Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis, 
-    Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit)
+    /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
+    Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
+    bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+    Stats::Vector & dWrong, Stats::Vector & hdWrong)
 {
     int ignored_way_id;
-    return findBlk(tag, is_secure, ignored_way_id, diff, hit, mis, off, faMis, faHit);
+    return findBlk(tag, is_secure, ignored_way_id, /*diff, hit, mis,*/ off, 
+        faMis, faHit, error, tagMisSpec, totTagMisSpec, dWrong, hdWrong);
 }
 // end, by shen
 
