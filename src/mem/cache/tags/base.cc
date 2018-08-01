@@ -198,16 +198,12 @@ BaseTags::regStats()
         .desc("num of set reads");
 
     tagMisSpec
-        .init(10)
         .name(name() + ".tag_misspec")
-        .desc("num of wrong tag reads")
-        .flags(nonan);
+        .desc("num of wrong tag reads");
     
     totTagMisSpec
-        .init(10)
         .name(name() + ".tot_tag_misspec")
-        .desc("total num of wrong tag reads")
-        .flags(nonan);
+        .desc("total num of wrong tag reads");
 
     dataWrong
         .init(10)

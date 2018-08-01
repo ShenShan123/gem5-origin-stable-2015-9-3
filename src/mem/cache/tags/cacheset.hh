@@ -85,13 +85,13 @@ class CacheSet
     Blktype* findBlk(Addr tag, bool is_secure, int& way_id, 
         /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
         Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
-        bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+        bool & error, Stats::Scalar & tagMisSpec, Stats::Scalar & totTagMisSpec, 
         Stats::Vector & dWrong, Stats::Vector & hdWrong);
     
     Blktype* findBlk(Addr tag, bool is_secure, 
         /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
         Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
-        bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+        bool & error, Stats::Scalar & tagMisSpec, Stats::Scalar & totTagMisSpec, 
         Stats::Vector & dWrong, Stats::Vector & hdWrong);
     // end
 
@@ -153,7 +153,7 @@ Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
     /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
     Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
-    bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+    bool & error, Stats::Scalar & tagMisSpec, Stats::Scalar & totTagMisSpec, 
     Stats::Vector & dWrong, Stats::Vector & hdWrong)
 {
     /**
@@ -171,7 +171,7 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
     double bitError = 0.01; // P(1 bit bit error) = 0.0062
     double tagErrorRate = 0.0088; // the tag mis-speculation in double sensing, P(tag error) = 0.0088
     double dataErrorRate = 0.02; // default data is 64 bits, P(data error) = 0.0199
-    int numTagErrors[10] = {0};
+    int numTagErrors = 0;
     std::bitset<28> errorMask;
     // tag timing speculations
     int hamDist = -1;
@@ -233,16 +233,7 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
         double ter = unif(e);
         double der = unif(e);
         // tags will be mis-speculative when the ways are active
-        numTagErrors[0] += (ter < tagErrorRate) && !(hamDist > 0);
-        numTagErrors[1] += (ter < tagErrorRate) && !(hamDist > 1);
-        numTagErrors[2] += (ter < tagErrorRate) && !(hamDist > 2);
-        numTagErrors[3] += (ter < tagErrorRate) && !(hamDist > 3);
-        numTagErrors[4] += (ter < tagErrorRate) && !(hamDist > 4);
-        numTagErrors[5] += (ter < tagErrorRate) && !(hamDist > 5);
-        numTagErrors[6] += (ter < tagErrorRate) && !(hamDist > 6);
-        numTagErrors[7] += (ter < tagErrorRate) && !(hamDist > 7);
-        numTagErrors[8] += (ter < tagErrorRate) && !(hamDist > 8);
-        numTagErrors[9] += (ter < tagErrorRate) && !(hamDist > 9);
+        numTagErrors += (ter < tagErrorRate);
 
         // data will be mis-speculative when the ways are active and the tags are read correctly
         dWrong[0] += !(ter < tagErrorRate) && !(hamDist > 0) && (der < dataErrorRate);
@@ -270,16 +261,7 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
         }
     }
 
-    tagMisSpec[0] += (numTagErrors[0] > 0); totTagMisSpec[0] += numTagErrors[0];
-    tagMisSpec[1] += (numTagErrors[1] > 0); totTagMisSpec[1] += numTagErrors[1];
-    tagMisSpec[2] += (numTagErrors[2] > 0); totTagMisSpec[2] += numTagErrors[2];
-    tagMisSpec[3] += (numTagErrors[3] > 0); totTagMisSpec[3] += numTagErrors[3];
-    tagMisSpec[4] += (numTagErrors[4] > 0); totTagMisSpec[4] += numTagErrors[4];
-    tagMisSpec[5] += (numTagErrors[5] > 0); totTagMisSpec[5] += numTagErrors[5];
-    tagMisSpec[6] += (numTagErrors[6] > 0); totTagMisSpec[6] += numTagErrors[6];
-    tagMisSpec[7] += (numTagErrors[7] > 0); totTagMisSpec[7] += numTagErrors[7];
-    tagMisSpec[8] += (numTagErrors[8] > 0); totTagMisSpec[8] += numTagErrors[8];
-    tagMisSpec[9] += (numTagErrors[9] > 0); totTagMisSpec[9] += numTagErrors[9];
+    tagMisSpec += (numTagErrors > 0); totTagMisSpec += numTagErrors;
 
     /*for (int i = 0; i < assoc; ++i) {
         // hamming dist distribution when 
@@ -299,7 +281,7 @@ Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, 
     /*Stats::Vector & diff, Stats::Vector & hit, Stats::Vector & mis,*/ 
     Stats::Vector & off, Stats::Vector & faMis, Stats::Scalar & faHit, 
-    bool & error, Stats::Vector & tagMisSpec, Stats::Vector & totTagMisSpec, 
+    bool & error, Stats::Scalar & tagMisSpec, Stats::Scalar & totTagMisSpec, 
     Stats::Vector & dWrong, Stats::Vector & hdWrong)
 {
     int ignored_way_id;
