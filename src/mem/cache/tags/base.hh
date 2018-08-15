@@ -141,12 +141,14 @@ class BaseTags : public ClockedObject
     //Stats::Vector diffBitFreq;
     Stats::Vector offWays;
     Stats::Vector fakeMisses;
-    Stats::Scalar fakeHits;
+    //Stats::Scalar fakeHits;
     Stats::Scalar setReads;
     Stats::Scalar tagMisSpec;
-    Stats::Scalar totTagMisSpec;
-    Stats::Vector dataWrong;
+    //Stats::Scalar totTagMisSpec;
+    //Stats::Vector dataWrong;
     Stats::Vector hitDataWrong;
+    Stats::Scalar wayPredCorrect;
+    Stats::Scalar partialTag;
     // end
 
     /**
