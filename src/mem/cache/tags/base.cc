@@ -180,12 +180,12 @@ BaseTags::regStats()
     offWays
         .init(10)
         .name(name() + ".off_ways")
-        .desc("num of ways that are turned off")
+        .desc("num of ways that are turned off");
 
     fakeMisses
         .init(10)
         .name(name() + ".fake_misses")
-        .desc("the hit ways that are turned off")
+        .desc("the hit ways that are turned off");
 
     /*fakeHits
         .name(name() + ".fake_hits")
@@ -212,7 +212,7 @@ BaseTags::regStats()
     hitDataWrong
         .init(10)
         .name(name() + ".hit_data_wrong")
-        .desc("num of wrong data that way is hit")
+        .desc("num of wrong data that way is hit");
 
     wayPredCorrect
         .name(name() + ".way_prediction_correct")
