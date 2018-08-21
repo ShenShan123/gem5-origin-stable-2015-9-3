@@ -179,7 +179,8 @@ public:
         int set = extractSet(addr);
         // change by shen
         bool error = false;
-        BlkType *blk = sets[set].findBlk(tag, is_secure, offWays, fakeMisses, error, tagMisSpec, hitDataWrong, wayPredCorrect, partialTag);
+        BlkType *blk = sets[set].findBlk(tag, is_secure, offWays, fakeMisses, error, tagMisSpec, 
+            hitDataWrong, wayPredCorrect, partialTag, sameBitsHitDistr, sameBitsMisDistr);
         
         setReads++;
 

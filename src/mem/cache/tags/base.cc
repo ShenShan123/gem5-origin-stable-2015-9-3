@@ -159,7 +159,7 @@ BaseTags::regStats()
         ;
 
     // add by shen
-    /*sameBitsHitDistr
+    sameBitsHitDistr
         .init(64)
         .name(name() + ".same_bits_hit_distr")
         .desc("hamming dist for tag hits")
@@ -171,7 +171,7 @@ BaseTags::regStats()
         .desc("hamming dist for tag misses")
         .flags(nozero | nonan);
 
-    diffBitFreq
+    /*diffBitFreq
         .init(64)
         .name(name() + ".diff_bit_freq")
         .desc("frequency of different tag bits")
@@ -181,13 +181,11 @@ BaseTags::regStats()
         .init(10)
         .name(name() + ".off_ways")
         .desc("num of ways that are turned off")
-        .flags(nonan| nozero);
 
     fakeMisses
         .init(10)
         .name(name() + ".fake_misses")
         .desc("the hit ways that are turned off")
-        .flags(nonan| nozero);
 
     /*fakeHits
         .name(name() + ".fake_hits")
@@ -215,7 +213,6 @@ BaseTags::regStats()
         .init(10)
         .name(name() + ".hit_data_wrong")
         .desc("num of wrong data that way is hit")
-        .flags(nonan | nozero);
 
     wayPredCorrect
         .name(name() + ".way_prediction_correct")
