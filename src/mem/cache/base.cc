@@ -771,7 +771,12 @@ BaseCache::regStats()
         .name(name() +".no_allocate_misses")
         .desc("Number of misses that were no-allocate")
         ;
-
+    // added by shen
+    numZeroSetBytes
+        .init(15)
+        .name(name() + ".numZeroSetBytes")
+        .desc("number of zero and set bytes writen in the cache");
+    // end
 }
 
 unsigned int

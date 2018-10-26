@@ -236,7 +236,52 @@ class Cache : public BaseCache
      */
     CacheBlk *handleFill(PacketPtr pkt, CacheBlk *blk,
                         PacketList &writebacks);
+    
+    // added by shen
+    // this is for statistics of the number of zero blocks that are writen to the caches
+    // the default block size is 64 byte.
+    void countZeroBlocks(uint8_t* data, uint32_t blkSize) {
+        uint64_t zeroFlag = 0;
+        uint64_t setFlag = 0;
+        for (int i = 0; i < blkSize; ++i) {
+            zeroFlag |= uint64_t(data[i] == 0) << i;
+            setFlag  |= uint64_t(data[i] == 0xff) << i;
+        }
 
+        numZeroSetBytes[6] += int(zeroFlag == 0xffffffffffffffff);
+        numZeroSetBytes[13] += int(setFlag == 0xffffffffffffffff);
+
+        for (int i = 0; i < blkSize; ++i) {
+            numZeroSetBytes[0] += int((zeroFlag & 1) == 1);
+            numZeroSetBytes[7] += int((setFlag & 1) == 1);
+            if (i % 2 == 0) {
+                numZeroSetBytes[1] += int((zeroFlag & 3) == 3);
+                numZeroSetBytes[8] += int((setFlag & 3) == 3);
+            }
+            if (i % 4 == 0) {
+                numZeroSetBytes[2] += int((zeroFlag & 0xf) == 0xf);
+                numZeroSetBytes[9] += int((setFlag & 0xf) == 0xf);
+            }
+            if (i % 8 == 0) {
+                numZeroSetBytes[3] += int((zeroFlag & 0xff) == 0xff);
+                numZeroSetBytes[10] += int((setFlag & 0xff) == 0xff);
+            }
+            if (i % 16 == 0) {
+                numZeroSetBytes[4] += int((zeroFlag & 0xffff) == 0xffff);
+                numZeroSetBytes[11] += int((setFlag & 0xffff) == 0xffff);
+            }
+            if (i % 32 == 0) {
+                numZeroSetBytes[5] += int((zeroFlag & 0xffffffff) == 0xffffffff);
+                numZeroSetBytes[12] += int((setFlag & 0xffffffff) == 0xffffffff);
+            }
+            
+            zeroFlag >>= 1;
+            setFlag >>= 1;
+        }
+
+        numZeroSetBytes[14] += blkSize;
+    }
+    // end, by shen
 
     /**
      * Performs the access specified by the request.
