@@ -62,6 +62,12 @@ import MemConfig
 from Caches import *
 from cpu2000 import *
 
+# added by shen
+from m5.internal.stats import periodicStatDump as statDump
+# Specify the period in Ticks
+statDump(10000000000000)
+# end
+
 # Check if KVM support has been enabled, we might need to do VM
 # configuration if that's the case.
 have_kvm_support = 'BaseKvmCPU' in globals()
