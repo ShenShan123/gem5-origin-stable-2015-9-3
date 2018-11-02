@@ -471,7 +471,8 @@ class BaseCache : public MemObject
     Stats::Scalar mshr_no_allocate_misses;
 
     // added by shen
-    Stats::Vector numZeroSetBytes; // index 0-6 is for zero bytes; index 7-13 is for set bytes, the last index 14 is total bytes writen in cache
+    Stats::Vector numZeroSetBytes; // index 0 is for zero bit num, 1-7 is for zero byte num; the last index 8 is total bytes writen in cache
+
     // end
     /**
      * @}

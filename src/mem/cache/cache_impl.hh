@@ -1524,8 +1524,10 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         assert(pkt->getSize() == blkSize);
 
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
-        countZeroBlocks(blk->data, blkSize); // added by shen
-
+        // added by shen
+        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
+            countZeroBlocks(blk->data, blkSize); 
+        // end
     }
 
     // We pay for fillLatency here.

@@ -773,9 +773,11 @@ BaseCache::regStats()
         ;
     // added by shen
     numZeroSetBytes
-        .init(15)
+        .init(9)
         .name(name() + ".numZeroSetBytes")
-        .desc("number of zero and set bytes writen in the cache");
+        .desc("number of zero and set bytes writen in the cache, \
+               index 0 is for zero bit num, 1-7 is for zero n-byte num, \
+               the last index 8 is total bytes writen in cache");
     // end
 }
 
