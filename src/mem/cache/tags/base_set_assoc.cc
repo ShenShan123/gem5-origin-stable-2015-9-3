@@ -106,8 +106,9 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             blk->whenReady = 0;
             blk->isTouched = false;
             blk->size = blkSize;
-            sets[i].blks[j]=blk;
+            blk->physicalWay = j; // this is the physical way position of this block, added by shen
             blk->set = i;
+            sets[i].blks[j]=blk;
         }
     }
 }

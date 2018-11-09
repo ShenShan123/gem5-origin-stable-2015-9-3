@@ -83,6 +83,12 @@ Cache::Cache(const Params *p)
     tags->setCache(this);
     if (prefetcher)
         prefetcher->setCache(this);
+
+    // added by shen
+    // generate the fault map for a cache
+    if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
+        generateFaultMap(p);
+    // end
 }
 
 Cache::~Cache()
@@ -1469,6 +1475,13 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         // happens in the subsequent satisfyCpuSideRequest.
         assert(pkt->isRead() || pkt->isWriteInvalidate());
 
+
+        // null-subblock detector here, added by shen
+        std::vector<bool> blockCM(blkSize / SUBBLOCKSIZE, true);
+        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
+            detectNullSubblocks(blk->data, blkSize, blockCM); 
+        // end
+
         // need to do a replacement
         blk = allocateBlock(addr, is_secure, writebacks);
         if (blk == NULL) {
@@ -1498,7 +1511,7 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
 
     if (is_secure)
         blk->status |= BlkSecure;
-    blk->status |= BlkValid | BlkReadable;
+    blk->status |= BlkValid | BlkReadable; // attention, shen
 
     if (!pkt->sharedAsserted()) {
         blk->status |= BlkWritable;

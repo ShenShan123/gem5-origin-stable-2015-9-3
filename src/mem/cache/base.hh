@@ -472,7 +472,6 @@ class BaseCache : public MemObject
 
     // added by shen
     Stats::Vector numZeroSetBytes; // index 0 is for zero bit num, 1-7 is for zero byte num; the last index 8 is total bytes writen in cache
-
     // end
     /**
      * @}

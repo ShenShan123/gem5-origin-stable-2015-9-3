@@ -114,6 +114,7 @@ class CacheBlk
      * @todo Move this into subclasses when we fix CacheTags to use them.
      */
     int set;
+    int physicalWay; // which way the block physically resides in, by shen
 
     /** whether this block has been touched */
     bool isTouched;
