@@ -53,6 +53,40 @@
 
 using namespace std;
 
+// generate the fault map at the construction of a cache, by shen
+void BaseSetAssoc::generateFaultMap(uint32_t cap) {
+    unsigned seed = name() == "system.cpu.dcache" ? 1 : (name() == "system.cpu.icache" ? 2 : 3);
+    std::default_random_engine e (seed);
+    std::normal_distribution<double> norm(0.0,1.0);
+
+    uint32_t numSubblocks = cap / SUBBLOCKSIZE;
+    inform("%s, cap: %d, numSubblocks: %d", name(), cap, numSubblocks);
+    faultMap = new bool[numSubblocks];
+    comprMap = new bool[numSubblocks];
+    curBlockMC = new bool[blkSize / SUBBLOCKSIZE];
+    numNullSubblocks = 0;
+    // the bit faulty is generated according to a normal distribution,
+    // and tranformed into the fault map
+    for (uint32_t i = 0; i < cap * 8; ++i) 
+        faultMap[i / 8 / SUBBLOCKSIZE] = YIELD < norm(e); // faulty entry is 0 in FM
+}
+
+void BaseSetAssoc::detectNullSubblocks(const uint8_t* data) {
+    uint64_t zeroFlag = 0;
+    numNullSubblocks = 0;
+
+    for (uint8_t i = 0; i < blkSize; ++i)
+        zeroFlag |= uint64_t(data[i] == 0) << i;
+
+    //inform("zero flag is %x", zeroFlag);
+
+    for (uint8_t i = 0; i < blkSize / SUBBLOCKSIZE; ++i) {
+        curBlockMC[i] = (zeroFlag & ((1ULL << SUBBLOCKSIZE) - 1)) != ((1ULL << SUBBLOCKSIZE) - 1); // null subblock is 0 in CM
+        numNullSubblocks += !curBlockMC[i];
+        zeroFlag >>= SUBBLOCKSIZE;
+    }
+}
+// end, by shen
 BaseSetAssoc::BaseSetAssoc(const Params *p)
     :BaseTags(p), assoc(p->assoc),
      numSets(p->size / (p->block_size * p->assoc)),
@@ -111,6 +145,11 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             sets[i].blks[j]=blk;
         }
     }
+    // added by shen
+    // generate the fault map for a cache
+    if (name() == "system.cpu.dcache.tags" || name() == "system.cpu.icache.tags" || name() == "system.l2.tags") // pay attention the name()
+        generateFaultMap(p->size);
+    // end
 }
 
 BaseSetAssoc::~BaseSetAssoc()
@@ -118,6 +157,11 @@ BaseSetAssoc::~BaseSetAssoc()
     delete [] dataBlks;
     delete [] blks;
     delete [] sets;
+    // added by shen
+    delete [] faultMap;
+    delete [] comprMap;
+    delete [] curBlockMC;
+    // end
 }
 
 CacheBlk*

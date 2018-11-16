@@ -31,6 +31,7 @@
 
 #include <string>
 #include <vector>
+#include <random> // added by shen
 
 #include "base/hashmap.hh"
 #include "base/statistics.hh"
@@ -47,9 +48,34 @@
 #include "params/RubyCache.hh"
 #include "sim/sim_object.hh"
 
+// subblock size for concertina, added by shen
+#define SUBBLOCKSIZE 4u // subblock size: 1,2,8 are OK
+// set bit counting subroutine
+inline int countBits(Addr n)
+{
+    unsigned int c = 0;
+    for (c = 0; n; ++c)
+        n &= (n - 1);    
+    return c;
+}
+// end
+
 class CacheMemory : public SimObject
 {
   public:
+    // add the fault map and the compress map for concertina, by shen
+    bool* faultMap;
+    bool* comprMap;
+    bool * curBlockMC;
+    uint8_t numSubblocksPerEntry;
+    // for constructing Concertina
+#define YIELD 0.001 // the target yield
+    // generate the fault map at the construction of a cache
+    void generateFaultMap(uint32_t cap);
+    // if the number of null sublocks is larger or equal to the number of faulty subentries, return true;
+    bool detectNullSubblocks(const uint8_t* data, int64 set, int way);
+    // end, by shen
+
     typedef RubyCacheParams Params;
     CacheMemory(const Params *p);
     ~CacheMemory();

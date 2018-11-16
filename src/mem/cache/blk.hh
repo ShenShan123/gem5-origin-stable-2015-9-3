@@ -115,6 +115,7 @@ class CacheBlk
      */
     int set;
     int physicalWay; // which way the block physically resides in, by shen
+    int faultyMatch; // the filling package matches the victim block, by shen
 
     /** whether this block has been touched */
     bool isTouched;
@@ -172,7 +173,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), refCount(0),
+          set(-1), physicalWay(-1), faultyMatch(true), isTouched(false), refCount(0), // changed by shen
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

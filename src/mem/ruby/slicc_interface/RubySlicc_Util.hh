@@ -39,7 +39,7 @@
 #include "mem/ruby/common/Address.hh"
 #include "mem/ruby/common/DataBlock.hh"
 #include "mem/packet.hh"
-
+class CacheMemory; //added by shen
 inline Cycles zero_time() { return Cycles(0); }
 
 inline NodeID
@@ -126,7 +126,7 @@ testAndRead(Address addr, DataBlock& blk, Packet *pkt)
  * returned if the data block was written, otherwise false is returned.
  */
 inline bool
-testAndWrite(Address addr, DataBlock& blk, Packet *pkt)
+testAndWrite(Address addr, DataBlock& blk, Packet *pkt, CacheMemory* cache = NULL)
 {
     Address pktLineAddr(pkt->getAddr());
     pktLineAddr.makeLineAddress();
@@ -142,6 +142,9 @@ testAndWrite(Address addr, DataBlock& blk, Packet *pkt)
         for (unsigned i = 0; i < size_in_bytes; ++i) {
             blk.setByte(i + startByte, data[i]);
         }
+        inform("testandwrite, lineAddr %llx, start %d, size %d", lineAddr, startByte, size_in_bytes);
+        //cache->detectNullSubblocks(data);
+
         return true;
     }
     return false;

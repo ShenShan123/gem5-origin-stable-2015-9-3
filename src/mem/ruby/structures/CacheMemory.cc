@@ -37,6 +37,50 @@
 
 using namespace std;
 
+// generate the fault map at the construction of a cache, by shen
+void CacheMemory::generateFaultMap(uint32_t cap) {
+    unsigned seed;
+    if (name() == "system.ruby.l2_cntrl0.L2cache") seed = 1;
+    else if (name() == "system.ruby.l1_cntrl0.L1Dcache") seed = 2;
+    else if (name() == "system.ruby.l1_cntrl0.L1Icache") seed = 3;
+
+    std::default_random_engine e (seed);
+    std::normal_distribution<double> norm(0.0,1.0);
+
+    uint32_t numSubblocks = cap / SUBBLOCKSIZE;
+    numSubblocksPerEntry = RubySystem::getBlockSizeBytes() / SUBBLOCKSIZE;
+    inform("%s, cap: %d, numSubblocks: %d, blksize: %d, numSubblocksPerEntry %d", name(), cap, numSubblocks, RubySystem::getBlockSizeBytes(), numSubblocksPerEntry);
+    faultMap = new bool[numSubblocks];
+    comprMap = new bool[numSubblocks];
+    curBlockMC = new bool[numSubblocksPerEntry];
+    // the bit faulty is generated according to a normal distribution,
+    // and tranformed into the fault map
+    for (uint32_t i = 0; i < cap * 8; ++i) 
+        faultMap[i / 8 / SUBBLOCKSIZE] = YIELD < norm(e); // faulty entry is 0 in FM
+}
+
+bool CacheMemory::detectNullSubblocks(const uint8_t* data, int64 set, int way) {
+    uint64_t zeroFlag = 0;
+    int numNullSubblocks = 0;
+    int numFaultyEntries = 0;
+
+    for (uint8_t i = 0; i < RubySystem::getBlockSizeBytes(); ++i)
+        zeroFlag |= uint64_t(data[i] == 0) << i;
+
+    //inform("zero flag is %x", zeroFlag);
+    
+    for (uint8_t i = 0; i < numSubblocksPerEntry; ++i) {
+        curBlockMC[i] = (zeroFlag & ((1ULL << SUBBLOCKSIZE) - 1)) != ((1ULL << SUBBLOCKSIZE) - 1); // null subblock is 0 in CM
+        numNullSubblocks += !curBlockMC[i];
+        zeroFlag >>= SUBBLOCKSIZE;
+        numFaultyEntries += !faultMap[(set * m_cache_assoc + way) * numSubblocksPerEntry + i];
+    }
+    if (numNullSubblocks < numFaultyEntries)
+        inform("%s, null: %d, fault: %d, result: %d", name(), numNullSubblocks, numFaultyEntries, numNullSubblocks >= numFaultyEntries);
+    return numNullSubblocks >= numFaultyEntries;
+}
+// end, by shen
+
 ostream&
 operator<<(ostream& out, const CacheMemory& obj)
 {
@@ -63,6 +107,7 @@ CacheMemory::CacheMemory(const Params *p)
     m_start_index_bit = p->start_index_bit;
     m_is_instruction_only_cache = p->is_icache;
     m_resource_stalls = p->resourceStalls;
+    generateFaultMap(m_cache_size); // added by shen
 }
 
 void
@@ -101,6 +146,9 @@ CacheMemory::~CacheMemory()
             delete m_cache[i][j];
         }
     }
+    delete [] faultMap;
+    delete [] comprMap;
+    delete [] curBlockMC;
 }
 
 // convert a Address to its location in the cache
@@ -147,6 +195,7 @@ CacheMemory::tryCacheAccess(const Address& address, RubyRequestType type,
 {
     assert(address == line_address(address));
     DPRINTF(RubyCache, "address: %s\n", address);
+    inform("%s try access, address: %s\n", name(), address);
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
     if (loc != -1) {
@@ -174,6 +223,7 @@ CacheMemory::testCacheAccess(const Address& address, RubyRequestType type,
 {
     assert(address == line_address(address));
     DPRINTF(RubyCache, "address: %s\n", address);
+    inform("%s test access, address: %s\n", name(), address);
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
 
@@ -247,6 +297,7 @@ CacheMemory::allocate(const Address& address, AbstractCacheEntry* entry)
     for (int i = 0; i < m_cache_assoc; i++) {
         if (!set[i] || set[i]->m_Permission == AccessPermission_NotPresent) {
             set[i] = entry;  // Init entry
+            //set[i]->faultFit = detectNullSubblocks(entry->getDataBlk().getData(0, RubySystem::getBlockSizeBytes()), cacheSet, i); // added by shen
             set[i]->m_Address = address;
             set[i]->m_Permission = AccessPermission_Invalid;
             DPRINTF(RubyCache, "Allocate clearing lock for addr: %x\n",

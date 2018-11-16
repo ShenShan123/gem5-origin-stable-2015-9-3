@@ -59,6 +59,18 @@
 
 class BaseCache;
 
+// subblock size for concertina, added by shen
+#define SUBBLOCKSIZE 4u // subblock size: 1,2,8 are OK
+// set bit counting subroutine
+inline int countBits(Addr n)
+{
+    unsigned int c = 0;        
+    for (c = 0; n; ++c)
+        n &= (n - 1);    
+    return c;
+}
+// end
+
 /**
  * A common base class of Cache tagstore objects.
  */
@@ -212,6 +224,11 @@ class BaseTags : public ClockedObject
     virtual int extractSet(Addr addr) const = 0;
 
     virtual void forEachBlk(CacheBlkVisitor &visitor) = 0;
+    // added by shen
+    //virtual void generateFaultMap(uint32_t cap) = 0;
+
+    virtual void detectNullSubblocks(const uint8_t* data) {};
+    // end
 };
 
 class BaseTagsCallback : public Callback

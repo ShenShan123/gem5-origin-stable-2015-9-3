@@ -48,6 +48,7 @@
 #include "debug/CacheRepl.hh"
 #include "mem/cache/tags/lru.hh"
 #include "mem/cache/base.hh"
+#include <iostream>
 
 LRU::LRU(const Params *p)
     : BaseSetAssoc(p)
@@ -74,14 +75,49 @@ CacheBlk*
 LRU::findVictim(Addr addr)
 {
     int set = extractSet(addr);
-    // grab a replacement candidate
-    BlkType *blk = sets[set].blks[assoc - 1];
+    // changed by shen
+    BlkType *blk = NULL;
 
-    if (blk->isValid()) {
-        DPRINTF(CacheRepl, "set %x: selecting blk %x for replacement\n",
-                set, regenerateBlkAddr(blk->tag, set));
+    if (!(name() == "system.cpu.dcache.tags" || name() == "system.cpu.icache.tags" || name() == "system.l2.tags")) {
+        blk = sets[set].blks[assoc - 1];
+        blk->faultyMatch = true;
+        
+        if (blk->isValid())
+            DPRINTF(CacheRepl, "set %x: selecting blk %x for replacement\n",
+                    set, regenerateBlkAddr(blk->tag, set));
+        
+        return blk;
     }
 
+    int8_t i;
+    // grab a replacement candidate
+    for(i = assoc - 1; i >= 0; --i) {
+        int numFaults = 0;
+
+        for (uint8_t j = 0; j < blkSize / SUBBLOCKSIZE; ++j)
+            // we need to find the physical way index of this block and count its faulty entries
+            numFaults += !faultMap[(set * assoc + sets[set].blks[i]->physicalWay) * (blkSize / SUBBLOCKSIZE) + j];
+
+        if (numFaults <= numNullSubblocks) {
+            // we have found the LRU way that fits the allocation as a victim
+            blk = sets[set].blks[i];
+            blk->faultyMatch = true;
+            // assign current CM to the global CM
+            std::memcpy(&comprMap[(set * assoc + sets[set].blks[i]->physicalWay) * (blkSize / SUBBLOCKSIZE)], curBlockMC, sizeof(bool) * blkSize / SUBBLOCKSIZE);
+            //for (uint8_t j = 0; j < blkSize / SUBBLOCKSIZE; ++j)
+                //std::cout << " " << curBlockMC[i] << " " << comprMap[(set * assoc + sets[set].blks[i]->physicalWay) * (blkSize / SUBBLOCKSIZE) + i];
+            DPRINTF(CacheRepl, "%s, num faults %d, num null blocks %d, physicalWay %d, way %d", name(), numFaults, numNullSubblocks, blk->physicalWay, i);
+            break;
+        }
+    }
+
+    // if we don't find the victim, invalidate the LRU way
+    if (i == -1) {
+        //blk = sets[set].blks[assoc - 1];
+        //blk->faultyMatch = false;
+        DPRINTF(CacheRepl, "address: %llx, no victim found, blk Ptr %llx", addr, blk);
+    }
+    // end, by shen
     return blk;
 }
 

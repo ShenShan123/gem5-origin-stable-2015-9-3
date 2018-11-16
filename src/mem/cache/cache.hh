@@ -61,8 +61,6 @@
 
 //#include <iostream> // just for debug, by shen
 #include <random> // by shen
-#include <vector>
-#include <math.h>
 
 //Forward decleration
 class BasePrefetcher;
@@ -228,7 +226,7 @@ class Cache : public BaseCache
      * list.  Return free block frame.  May return NULL if there are
      * no replaceable blocks at the moment.
      */
-    CacheBlk *allocateBlock(Addr addr, bool is_secure, PacketList &writebacks);
+    CacheBlk *allocateBlock(Addr addr, bool is_secure, PacketList &writebacks, const uint8_t* pktData); // changed by shen
 
     /**
      * Populates a cache block and handles all outstanding requests for the
@@ -242,17 +240,6 @@ class Cache : public BaseCache
     CacheBlk *handleFill(PacketPtr pkt, CacheBlk *blk,
                         PacketList &writebacks);
     
-    // added by shen
-    // set bit counting subroutine
-    inline int countBits(Addr n)
-    {
-        unsigned int c = 0;
-        
-        for (c = 0; n; ++c)
-            n &= (n - 1);
-    
-        return c;
-    }
 
     // this is for statistics of the number of zero blocks that are writen to the caches
     // the default block size is 64 byte.
@@ -295,54 +282,6 @@ class Cache : public BaseCache
 
         numZeroSetBytes[8] += blkSize;
     }
-    // end, by shen
-
-    // added by shen
-    // for constructing Concertina
-    std::vector<bool> faultMap;
-    std::vector<bool> comprMap;
-
-#define SUBBLOCKSIZE 4u // 1,2,8 are OK
-#define YIELD 0.001
-
-    // generate the fault map at the construction of a cache
-    void generateFaultMap(const Params *p) {
-        unsigned seed = name() == "system.cpu.dcache" ? 1 : (name() == "system.cpu.icache" ? 2 : 3);
-        std::default_random_engine e (seed);
-        std::normal_distribution<double> norm(0.0,1.0);
-        faultMap.resize(p->size / SUBBLOCKSIZE);
-        comprMap.resize(p->size / SUBBLOCKSIZE);
-
-        // the bit faulty is generated according to a normal distribution,
-        // and tranformed into the fault map
-        for (uint32_t i = 0; i < p->size * 8; ++i) {
-            faultMap[i / 8 / SUBBLOCKSIZE] = YIELD < norm(e); // faulty entry is 0 in FM
-        }
-
-        /*std::cout << name() << "fault map is ";
-        for (uint32_t i = 0; i < faultMap.size(); ++i)
-            std::cout << faultMap[i] << " ";
-        std::cout << std::endl;*/
-    }
-
-    void detectNullSubblocks(uint8_t* data, uint32_t blkSize, std::vector<bool> & cm) {
-        uint64_t zeroFlag = 0;
-
-        for (uint8_t i = 0; i < blkSize; ++i)
-            zeroFlag |= uint64_t(data[i] == 0) << i;
-
-        for (uint8_t i = 0; i < cm.size(); ++i) {
-            std::cout << i << " ";
-            zeroFlag >>= SUBBLOCKSIZE;
-            cm[i] = false;//(zeroFlag & ((1u << SUBBLOCKSIZE) - 1)) != ((1u << SUBBLOCKSIZE) - 1); // null subblock is 0 in CM
-        }
-
-        std::cout << name() << " CM: ";
-        for (int i = 0; i < cm.size(); ++i)
-            std::cout << cm[i] << " ";
-        std::cout << std::endl;
-    }
-    // end, by shen
 
     /**
      * Performs the access specified by the request.

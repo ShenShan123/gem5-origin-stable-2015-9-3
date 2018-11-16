@@ -109,7 +109,19 @@ class BaseSetAssoc : public BaseTags
     /** Mask out all bits that aren't part of the block offset. */
     unsigned blkMask;
 
+    // add the fault map and the compress map for concertina, by shen
+    bool* faultMap;
+    bool* comprMap;
+    bool * curBlockMC;
+    uint8_t numNullSubblocks;
 public:
+    // for constructing Concertina
+#define YIELD 0.001 // the target yield
+    // generate the fault map at the construction of a cache
+    void generateFaultMap(uint32_t cap);
+
+    void detectNullSubblocks(const uint8_t* data);
+    // end, by shen
 
     /** Convenience typedef. */
      typedef BaseSetAssocParams Params;
@@ -175,10 +187,11 @@ public:
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
                                  int context_src)
     {
+        inform("%s accessBlock", name());
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
         BlkType *blk = sets[set].findBlk(tag, is_secure);
-        lat = accessLatency;;
+        lat = accessLatency;
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on

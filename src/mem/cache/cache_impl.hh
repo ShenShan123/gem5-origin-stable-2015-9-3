@@ -83,12 +83,6 @@ Cache::Cache(const Params *p)
     tags->setCache(this);
     if (prefetcher)
         prefetcher->setCache(this);
-
-    // added by shen
-    // generate the fault map for a cache
-    if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
-        generateFaultMap(p);
-    // end
 }
 
 Cache::~Cache()
@@ -307,6 +301,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     DPRINTF(Cache, "%s for %s addr %#llx size %d\n", __func__,
             pkt->cmdString(), pkt->getAddr(), pkt->getSize());
+
     if (pkt->req->isUncacheable()) {
         DPRINTF(Cache, "%s%s addr %#llx uncacheable\n", pkt->cmdString(),
                 pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -330,10 +325,16 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         return false;
     }
 
+    // by shen
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
     blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
+    
+    // added by shen
+    //if (/*name() == "system.cpu.dcache" || name() == "system.cpu.icache" ||*/ name() == "system.l2") {
+        //if (blk && !blk->faultyMatch) blk = NULL;//pkt->req->setFlags(Request::UNCACHEABLE);
+    //}// end
 
     DPRINTF(Cache, "%s%s addr %#llx size %d (%s) %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -346,7 +347,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         assert(blkSize == pkt->getSize());
         if (blk == NULL) {
             // need to do a replacement
-            blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), writebacks);
+            assert(pkt->hasData());
+            blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), writebacks, pkt->getConstPtr<uint8_t>());
             if (blk == NULL) {
                 // no replaceable block available: give up, fwd to next level.
                 incMissCount(pkt);
@@ -366,6 +368,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
+
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
         return true;
@@ -376,7 +379,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         incHitCount(pkt);
         satisfyCpuSideRequest(pkt, blk);
         return true;
-    }
+    } //else if ((blk != NULL) && !blk->faultyMatch) blk->invalidate();
 
     // Can't satisfy access normally... either no block (blk == NULL)
     // or have block but need exclusive & only have shared.
@@ -540,7 +543,6 @@ Cache::recvTimingReq(PacketPtr pkt)
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
         satisfied = access(pkt, blk, lat, writebacks);
-
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
         while (!writebacks.empty()) {
@@ -766,16 +768,16 @@ Cache::recvTimingReq(PacketPtr pkt)
     if (next_pf_time != MaxTick)
         requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),
                                                 next_pf_time));
-
+    
     return true;
 }
-
 
 // See comment in cache.hh.
 PacketPtr
 Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
                     bool needsExclusive) const
 {
+    //if (blk && !blk->faultyMatch) return NULL; // by shen
     bool blkValid = blk && blk->isValid();
 
     if (cpu_pkt->req->isUncacheable()) {
@@ -918,6 +920,9 @@ Cache::recvAtomic(PacketPtr pkt)
         }
 
         DPRINTF(Cache, "Sending an atomic %s for %#llx (%s)\n",
+                bus_pkt->cmdString(), bus_pkt->getAddr(),
+                bus_pkt->isSecure() ? "s" : "ns");
+        inform("Sending an atomic %s for %#llx (%s)\n",
                 bus_pkt->cmdString(), bus_pkt->getAddr(),
                 bus_pkt->isSecure() ? "s" : "ns");
 
@@ -1405,7 +1410,6 @@ Cache::writebackVisitor(CacheBlk &blk)
 bool
 Cache::invalidateVisitor(CacheBlk &blk)
 {
-
     if (blk.isDirty())
         warn_once("Invalidating dirty cache lines. Expect things to break.\n");
 
@@ -1419,9 +1423,17 @@ Cache::invalidateVisitor(CacheBlk &blk)
 }
 
 CacheBlk*
-Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
+Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks, const uint8_t* pktData)
 {
+    // added 
+    if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2") {
+        assert(pktData != NULL);
+        tags->detectNullSubblocks(pktData);
+    }
+    // end here
+    
     CacheBlk *blk = tags->findVictim(addr);
+    if (blk == NULL) return blk; // added by shen
 
     if (blk->isValid()) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
@@ -1475,15 +1487,8 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         // happens in the subsequent satisfyCpuSideRequest.
         assert(pkt->isRead() || pkt->isWriteInvalidate());
 
-
-        // null-subblock detector here, added by shen
-        std::vector<bool> blockCM(blkSize / SUBBLOCKSIZE, true);
-        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
-            detectNullSubblocks(blk->data, blkSize, blockCM); 
-        // end
-
         // need to do a replacement
-        blk = allocateBlock(addr, is_secure, writebacks);
+        blk = allocateBlock(addr, is_secure, writebacks, pkt->getConstPtr<uint8_t>());
         if (blk == NULL) {
             // No replaceable block... just use temporary storage to
             // complete the current request and then get rid of it
@@ -1538,8 +1543,9 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
 
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
         // added by shen
-        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
+        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2") {
             countZeroBlocks(blk->data, blkSize); 
+        }
         // end
     }
 
@@ -1960,6 +1966,7 @@ Cache::getNextMSHR()
 PacketPtr
 Cache::getTimingPacket()
 {
+    inform("enter getTimingPacket: 1986"); // by shen
     MSHR *mshr = getNextMSHR();
 
     if (mshr == NULL) {
