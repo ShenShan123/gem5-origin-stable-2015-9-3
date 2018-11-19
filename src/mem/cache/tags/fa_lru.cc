@@ -174,7 +174,7 @@ FALRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int context_src)
 }
 
 CacheBlk*
-FALRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int context_src,
+FALRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int context_src, 
                    int *inCache)
 {
     accesses++;
@@ -247,6 +247,24 @@ FALRU::findVictim(Addr addr)
     //assert(check());
     return blk;
 }
+
+//sxj
+CacheBlk*
+FALRU::findVictimR(Addr addr){
+    return NULL;
+}
+
+CacheBlk*
+FALRU::findVictimNR(Addr addr){
+    return NULL;
+}
+void FALRU::blockRound(CacheBlk *blk1, CacheBlk *blk2){
+
+}
+void FALRU::blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks){
+
+}
+//sxj end
 
 void
 FALRU::insertBlock(PacketPtr pkt, CacheBlk *blk)

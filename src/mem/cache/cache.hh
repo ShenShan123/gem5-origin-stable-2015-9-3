@@ -138,7 +138,7 @@ class Cache : public BaseCache
     };
 
     /**
-     * The memory-side port extends the base cache master port with
+     * The memory-side port extends the base cache master port withv
      * access functions for functional, atomic and timing snoops.
      */
     class MemSidePort : public CacheMasterPort
@@ -212,9 +212,11 @@ class Cache : public BaseCache
                 Cycles &lat, PacketList &writebacks);
 
     /**
-     *Handle doing the Compare and Swap function for SPARC.
+     * Handle doing the Compare and Swap function for SPARC.
      */
     void cmpAndSwap(CacheBlk *blk, PacketPtr pkt);
+
+
 
     /**
      * Find a block frame for new block at address addr targeting the
@@ -224,6 +226,10 @@ class Cache : public BaseCache
      * no replaceable blocks at the moment.
      */
     CacheBlk *allocateBlock(Addr addr, bool is_secure, PacketList &writebacks);
+
+    //sxj
+    CacheBlk *allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, PacketList &writebacks);
+    //sxj end
 
     /**
      * Populates a cache block and handles all outstanding requests for the
@@ -246,7 +252,7 @@ class Cache : public BaseCache
     bool recvTimingReq(PacketPtr pkt);
 
     /**
-     * Handles a response (cache line fill/write ack) from the bus.
+     * Handles a response (cache line fill/write ack（写应答）) from the bus.
      * @param pkt The response packet
      */
     void recvTimingResp(PacketPtr pkt);
@@ -363,7 +369,7 @@ class Cache : public BaseCache
      * cache gets granted the downstream bus in timing mode.
      * @return The request to service, NULL if none found.
      */
-    PacketPtr getTimingPacket();
+    PacketPtr getTimingPacket();                                            //当cache获取了访问下级cache的总线权时调用
 
     /**
      * Marks a request as in service (sent on the bus). This can have

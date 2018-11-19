@@ -83,6 +83,17 @@ BaseTags::regStats()
         .desc("Cycle average of tags in use")
         ;
 
+    //sxj
+    singleError
+        .name(name() + ".single_error")
+        .desc("Number of single bit error.")
+        ;
+    multiError
+        .name(name() + ".multi_error")
+        .desc("Number of multi bits error.")
+        ;
+    //sxj end
+
     totalRefs
         .name(name() + ".total_refs")
         .desc("Total number of references to valid blocks.")

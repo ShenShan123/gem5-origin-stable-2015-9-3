@@ -195,6 +195,34 @@ BaseCache::regStats()
 #define SUM_NON_DEMAND(s) \
     (s[MemCmd::SoftPFReq] + s[MemCmd::HardPFReq])
 
+    //sxj
+    robustReadHits
+        .name(name() + ".robust_read_hits")
+        .desc("number of read hits within robust line")
+        ;
+    robustWriteHits
+        .name(name() + ".robust_write_hits")
+        .desc("number of write hits within robust line")
+        ;
+    nonRobustReadHits
+        .name(name() + ".nonRobust_read_hits")
+        .desc("number of read hits within non-Robust line")
+        ;
+    nonRobustWriteHits
+        .name(name() + ".nonRobust_write_hits")
+        .desc("number of write hits within non-Robust line")
+        ;
+    swaps
+        .name(name() + ".swaps")
+        .desc("number of swaps")
+        ;
+    rounds
+        .name(name() + ".rounds")
+        .desc("number of rounds")
+        ;
+    //sxj end
+
+
     demandHits
         .name(name() + ".demand_hits")
         .desc("number of demand (read+write) hits")

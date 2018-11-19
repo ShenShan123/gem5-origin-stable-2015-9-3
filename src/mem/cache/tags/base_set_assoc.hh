@@ -172,12 +172,59 @@ public:
      * @param lat The access latency.
      * @return Pointer to the cache block if found.
      */
+    //sxj
+    //用于匹配统一接口
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
-                                 int context_src)
+                                 int context_src){
+        return NULL;
+    }
+    //sxj end
+
+    CacheBlk* accessBlockNew(Addr addr, bool is_secure, Cycles &lat,
+                                 int context_src, int cacheLevel)
     {
+	//std::cout << "into the accessBlockNew" << std::endl;
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
         BlkType *blk = sets[set].findBlk(tag, is_secure);
+
+        //sxj
+        assert (cacheLevel != 0);
+        if (blk && !blk->isRobust){
+	    std::cout << "judging weather there have a error:" << std::endl;
+            int singleProb = rand()%1000;
+            if (singleProb == 1){
+		singleError++;
+		//blk->invalidate();
+                //blk = NULL;
+                int multiProb = rand()%1000;
+                if (cacheLevel == 3 || cacheLevel == 4)
+                    if (multiProb == 1){
+		        multiError++;
+                        blk->isDisabled = true;
+                        std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
+                    }
+                    else{
+                        std::cout << "a single bit error happened in a non-Robust block within L23" << std::endl;
+                    }
+                else
+                    std::cout << "a single bit error happened in a non-Robust block within L1" << std::endl;
+
+                //invalidate(blk);      //XXXXXX
+
+                //blk->status = 0;      //将block初始化
+                //blk = NULL;             //返回NULL，说明miss，只要有1-bit error发生，就视为miss
+            }
+	    else
+                std::cout << "no error" << std::endl;
+        }
+        //sxj end
+
+	//sxj
+	//std::cout << "tag of pkt: " << tag << std::endl;
+	//if (blk)
+	//	std::cout << "tag of blk: " << blk->tag << std::endl;
+	//sxj end
         lat = accessLatency;;
 
         // Access all tags in parallel, hence one in each way.  The data side
@@ -228,21 +275,129 @@ public:
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            blk = sets[set].blks[i];
-            if (!blk->isValid()) {
-                break;
+            if (!sets[set].blks[i]->isDisabled) {   //sxj
+                blk = sets[set].blks[i];
+                if (!blk->isValid() || blk->isMissed) {
+                    //blk->isMissed = false;  //sxj
+                    break;
+                }
             }
         }
 
         return blk;
     }
+    //sxj
+    CacheBlk* findVictimR(Addr addr)
+    {
+        BlkType *blk = NULL;
+        int set = extractSet(addr);
+
+        // prefer to evict an invalid block
+        for (int i = 0; i < assoc; ++i) {
+            if (!sets[set].blks[i]->isDisabled && sets[set].blks[i]->isRobust) {
+                blk = sets[set].blks[i];
+                if (!blk->isValid() || blk->isMissed) {
+                    //blk->isMissed = false;  //sxj
+                    break;
+                }
+            }
+
+        }
+
+        return blk;
+    }
+
+    CacheBlk* findVictimNR(Addr addr)
+    {
+        BlkType *blk = NULL;
+        int set = extractSet(addr);
+
+        // prefer to evict an invalid block
+        for (int i = 0; i < assoc; ++i) {
+            if (!sets[set].blks[i]->isDisabled && !sets[set].blks[i]->isRobust) {
+                blk = sets[set].blks[i];
+                if (!blk->isValid() || blk->isMissed) {
+                    //blk->isMissed = false;  //sxj
+                    break;
+                }
+            }
+        }
+
+        return blk;
+    }
+    //sxj end
+
+    //sxj
+    /**
+     * Used for the write miss with a non-Robust victim cell.
+     * @param blk1 The victim non-Robust cell.
+     * @param blk2 The LRU Robust cell.
+     */
+    void blockRound(CacheBlk *blk1, CacheBlk *blk2){         
+        if (!blk1->isTouched) {
+            tagsInUse++;
+            blk1->isTouched = true;
+            if (!warmedUp && tagsInUse.value() >= warmupBound) {
+                warmedUp = true;
+                warmupCycle = curTick();
+            }
+        }
+
+        if (blk1->isValid()) {
+            replacements[0]++;
+            totalRefs += blk1->refCount;
+            ++sampledRefs;
+            occupancies[blk1->srcMasterId]--;
+        }
+        blk1->isTouched = true;
+        *blk1 = *blk2;
+        blk1->srcMasterId = blk2->srcMasterId;
+        blk1->tickInserted = blk2->tickInserted;
+        //保留LRU优先级
+        tagAccesses += 1;
+        dataAccesses += 1;
+    }
+
+    /**
+     * Used for the write miss with a non-Robust victim cell.
+     * @param blk1 The hitted non-Robust cell.
+     * @param blk2 The LRU Robust cell.
+     */
+    void blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks){
+        if (blk2 != NULL) {
+            if (blk2->whenReady > curTick()
+                && blk2->whenReady > blk1->whenReady
+                && cache->ticksToCycles(blk2->whenReady - curTick())
+                > accessLatency) {
+                lat = cache->ticksToCycles(blk2->whenReady - curTick());
+            }
+            blk2->refCount += 1;
+        }
+        // if (blk2->isDirty()) {
+        //         // Save writeback packet for handling by caller
+        //     writebacks.push_back(writebackBlk(blk2));
+        // }
+    //start the swap
+        CacheBlk *tempBlk = new CacheBlk;
+        *tempBlk = *blk1;
+        tempBlk->srcMasterId = blk1->srcMasterId;
+        tempBlk->tickInserted = blk1->tickInserted;
+        *blk1 = *blk2;
+        blk1->srcMasterId = blk2->srcMasterId;
+        blk1->tickInserted = blk2->tickInserted;
+        *blk2 = *tempBlk;
+        blk2->srcMasterId = tempBlk->srcMasterId;
+        blk2->tickInserted = tempBlk->tickInserted;
+        delete tempBlk;
+    }
+    //sxj end
 
     /**
      * Insert the new block into the cache.
      * @param pkt Packet holding the address to update
      * @param blk The block to update.
      */
-     void insertBlock(PacketPtr pkt, CacheBlk *blk)
+     void insertBlock(PacketPtr pkt, CacheBlk *blk)                             //本函数依旧未对blk的data做出更新
      {
          Addr addr = pkt->getAddr();
          MasterID master_id = pkt->req->masterId();
@@ -273,6 +428,8 @@ public:
 
              blk->invalidate();
          }
+
+	 blk->isMissed = false;//XXXXXX
 
          blk->isTouched = true;
 

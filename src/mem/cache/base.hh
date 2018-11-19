@@ -344,6 +344,19 @@ class BaseCache : public MemObject
 
     /** Number of hits per thread for each type of command. @sa Packet::Command */
     Stats::Vector hits[MemCmd::NUM_MEM_CMDS];
+
+    //sxj
+    /** Number of the hit for robust line or non-robust line*/
+    Stats::Scalar robustReadHits;
+    Stats::Scalar robustWriteHits;
+    Stats::Scalar nonRobustReadHits;
+    Stats::Scalar nonRobustWriteHits;
+    /** Number of the block swap or round times*/
+    Stats::Scalar swaps;
+    Stats::Scalar rounds;
+
+    //sxj end
+
     /** Number of hits for demand accesses. */
     Stats::Formula demandHits;
     /** Number of hit for all accesses. */
@@ -507,7 +520,7 @@ class BaseCache : public MemObject
 
     const AddrRangeList &getAddrRanges() const { return addrRanges; }
 
-    MSHR *allocateMissBuffer(PacketPtr pkt, Tick time, bool requestBus)
+    MSHR *allocateMissBuffer(PacketPtr pkt, Tick time, bool requestBus)                     //recvTimingReq中的requestBus为true
     {
         return allocateBufferInternal(&mshrQueue,
                                       blockAlign(pkt->getAddr()), blkSize,

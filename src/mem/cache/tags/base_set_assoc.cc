@@ -105,6 +105,13 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             blk->tag = j;
             blk->whenReady = 0;
             blk->isTouched = false;
+            //sxj
+            /** only the first two Blocks of a cache set are seen as a Robust one. */
+            if (j <= 1)
+                blk->isRobust = true;
+            else
+                blk->isRobust = false;
+            //sxj end
             blk->size = blkSize;
             sets[i].blks[j]=blk;
             blk->set = i;

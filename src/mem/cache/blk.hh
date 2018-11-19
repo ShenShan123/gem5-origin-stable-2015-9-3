@@ -118,6 +118,15 @@ class CacheBlk
     /** whether this block has been touched */
     bool isTouched;
 
+    //sxj
+    /** whether this block is a Robust cell or non-Robust one*/
+    bool isRobust;
+
+    //sxj
+    /** whether this block is disabled cause by encounter a multi bits error*/
+    bool isDisabled;
+    bool isMissed;
+
     /** Number of references to this block since it was brought in. */
     int refCount;
 
@@ -168,10 +177,11 @@ class CacheBlk
 
   public:
 
+    //sxj
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), refCount(0),
+          set(-1), isTouched(false), isRobust(false), isDisabled(false), isMissed(false), refCount(0),
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}
@@ -199,7 +209,7 @@ class CacheBlk
      * Checks the write permissions of this block.
      * @return True if the block is writable.
      */
-    bool isWritable() const
+    bool isWritable() const                                             //is writable指的就是同时要可写、valid两点
     {
         const State needed_bits = BlkWritable | BlkValid;
         return (status & needed_bits) == needed_bits;
@@ -229,7 +239,7 @@ class CacheBlk
     /**
      * Invalidate the block and clear all state.
      */
-    void invalidate()
+    void invalidate()                           //本函数不会影响block的isRobust以及isDisabled两个标志位
     {
         status = 0;
         isTouched = false;
@@ -323,7 +333,7 @@ class CacheBlk
          *
          *  state   writable    dirty   valid
          *  M       1           1       1
-         *  O       0           1       1
+         *  O       0           1       1                   O为什么不能write？？
          *  E       1           0       1
          *  S       0           0       1
          *  I       0           0       0
@@ -339,8 +349,8 @@ class CacheBlk
           default:    s = 'T'; break; // @TODO add other types
         }
         return csprintf("state: %x (%c) valid: %d writable: %d readable: %d "
-                        "dirty: %d tag: %x", status, s, isValid(),
-                        isWritable(), isReadable(), isDirty(), tag);
+                        "dirty: %d robust: %d disable: %d tag: %x", status, s, isValid(),
+                        isWritable(), isReadable(), isDirty(), isRobust, isDisabled, tag);//sxj
     }
 
     /**

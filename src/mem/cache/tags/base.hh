@@ -96,6 +96,12 @@ class BaseTags : public ClockedObject
     /** Per cycle average of the number of tags that hold valid data. */
     Stats::Average tagsInUse;
 
+    //sxj
+    /** Number of the error happened for either single bit or multi bits*/
+    Stats::Scalar singleError;
+    Stats::Scalar multiError;
+    //sxj end
+
     /** The total number of references to a block before it is replaced. */
     Stats::Scalar totalRefs;
 
@@ -199,7 +205,12 @@ class BaseTags : public ClockedObject
     virtual void invalidate(CacheBlk *blk) = 0;
 
     virtual CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
-                                  int context_src) = 0;
+                                  int context_src) = 0;  
+    virtual CacheBlk* accessBlockNew(Addr addr, bool is_secure, Cycles &lat,
+                                  int context_src, int cacheLevel){
+    	std::cout << "accessBlockNew in base" << std::endl;
+	return NULL;
+    }//sxj
 
     virtual Addr extractTag(Addr addr) const = 0;
 
@@ -208,6 +219,13 @@ class BaseTags : public ClockedObject
     virtual Addr regenerateBlkAddr(Addr tag, unsigned set) const = 0;
 
     virtual CacheBlk* findVictim(Addr addr) = 0;
+
+    //sxj
+    virtual CacheBlk* findVictimR(Addr addr) = 0;
+    virtual CacheBlk* findVictimNR(Addr addr) = 0;
+    virtual void blockRound(CacheBlk *blk1, CacheBlk *blk2) = 0;
+    virtual void blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks) = 0;
+    //sxj end
 
     virtual int extractSet(Addr addr) const = 0;
 

@@ -212,6 +212,12 @@ public:
      * @return The block to place the replacement in.
      */
     CacheBlk* findVictim(Addr addr);
+    //sxj
+    CacheBlk* findVictimR(Addr addr);
+    CacheBlk* findVictimNR(Addr addr);
+    void blockRound(CacheBlk *blk1, CacheBlk *blk2);
+    void blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks);
+    //sxj end
 
     void insertBlock(PacketPtr pkt, CacheBlk *blk);
 

@@ -166,7 +166,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         assert(blk->isWritable());
         // Write or WriteInvalidate at the first cache with block in Exclusive
         if (blk->checkWrite(pkt)) {
-            pkt->writeDataToBlock(blk->data, blkSize);
+            pkt->writeDataToBlock(blk->data, blkSize);                          //使用pkt中的数据更新blk的部分
         }
         // Always mark the line as dirty even if we are a failed
         // StoreCond so we supply data to any snoops that have
@@ -179,7 +179,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         if (pkt->isLLSC()) {
             blk->trackLoadLocked(pkt);
         }
-        pkt->setDataFromBlock(blk->data, blkSize);
+        pkt->setDataFromBlock(blk->data, blkSize);                              //从blk中获取数据，并放入pkt中
         if (pkt->getSize() == blkSize) {
             // special handling for coherent block requests from
             // upper-level caches
@@ -205,7 +205,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
                 // - we are not satisfying an instruction fetch (this
                 //   prevents dirty data in the i-cache)
 
-                if (blk->isDirty()) {
+                if (blk->isDirty()) {                                                       //如果是独享者
                     // special considerations if we're owner:
                     if (!deferred_response && !isTopLevel) {
                         // if we are responding immediately and can
@@ -296,12 +296,13 @@ bool
 Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
               PacketList &writebacks)
 {
+    //std::cout << "into the access" << std::endl;//sxj
     // sanity check
     assert(pkt->isRequest());
 
     DPRINTF(Cache, "%s for %s addr %#llx size %d\n", __func__,
             pkt->cmdString(), pkt->getAddr(), pkt->getSize());
-    if (pkt->req->isUncacheable()) {
+    if (pkt->req->isUncacheable()) {                                            //如果是指向无法缓存的对象的request的话
         DPRINTF(Cache, "%s%s addr %#llx uncacheable\n", pkt->cmdString(),
                 pkt->req->isInstFetch() ? " (ifetch)" : "",
                 pkt->getAddr());
@@ -310,7 +311,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             tags->clearLocks();
 
         // flush and invalidate any existing block
-        CacheBlk *old_blk(tags->findBlock(pkt->getAddr(), pkt->isSecure()));
+        CacheBlk *old_blk(tags->findBlock(pkt->getAddr(), pkt->isSecure()));    //通过tag试图寻找cache中是否存在blk
         if (old_blk && old_blk->isValid()) {
             if (old_blk->isDirty())
                 writebacks.push_back(writebackBlk(old_blk));
@@ -321,13 +322,82 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         blk = NULL;
         // lookupLatency is the latency in case the request is uncacheable.
         lat = lookupLatency;
-        return false;
+        return false;                                                          //只要是uncacheable，就一定返回false
     }
 
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
-    blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
+    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+
+    //sxj
+    int cacheLevel = 0;
+    if (name() == "system.cpu.icache"){
+        cacheLevel = 1;
+    }
+    else if (name() == "system.cpu.dcache"){
+        cacheLevel = 2;
+    }
+    else if (name() == "system.l2"){
+        cacheLevel = 3;
+    }
+    else if (name() == "system.l3"){
+        cacheLevel = 4;
+    }
+    
+
+    //sxj end
+    //std::cout << "before accessBlockNew" << std::endl; 
+    std::cout << "calling the accessBlockNew by : " << name() << std::endl;
+    blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
+    DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+    //sxj
+    if (pkt->isRead())
+	if (blk)
+	    if (blk->isRobust){
+		std::cout << "read hit a Robust line, first" << std::endl;
+        robustReadHits++;
+        }
+	    else{
+		std::cout << "read hit a non-Robust line, first" << std::endl;
+        nonRobustReadHits++;
+        }
+	else
+		std::cout << "read miss, first" << std::endl;
+    else if (pkt->isWrite()){
+	if (blk)
+	    if (blk->isRobust){
+		std::cout << "write hit a Robust line, first" << std::endl;
+        robustWriteHits++;
+        }
+	    else{
+		std::cout << "write hit a non-Robust line, first" << std::endl;
+        nonRobustWriteHits++;
+        }
+	else
+		std::cout << "write miss, first" << std::endl;
+    }
+    
+    if (pkt->isWrite() && blk && !blk->isRobust){
+	std::cout << "doing a block swap!!!" << std::endl;
+	//std::cout << "blk: " << blk->print() << std::endl;
+        CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
+	//if (Rblk)
+		//std::cout << "Rblk: " << Rblk->print() << std::endl;
+        if (Rblk->isDirty()) {
+        // Save writeback packet for handling by caller
+            writebacks.push_back(writebackBlk(Rblk));
+        }
+        tags->blockSwap(blk, Rblk, lat, writebacks);
+        if (isTopLevel)
+            ++++++lat;//******************************这里应该区分l1和l2、l3
+        else
+            ++++++++++++lat;
+	blk = Rblk;
+    swaps++;
+    }
+    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+    //sxj end
 
     DPRINTF(Cache, "%s%s addr %#llx size %d (%s) %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -336,24 +406,25 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
-    if (pkt->cmd == MemCmd::Writeback) {
+    if (pkt->cmd == MemCmd::Writeback) {                                            //一定是上一级cache发出，本判断内不更新数据，更新tag
         assert(blkSize == pkt->getSize());
-        if (blk == NULL) {
+        if (blk == NULL) {                                                          //如果写回没有命中本级cache
             // need to do a replacement
-            blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), writebacks);
-            if (blk == NULL) {
+            blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), 0, true, writebacks);       //上一级发出的写回，本级cache尝试将其allocate
+                                                                                    //这里的第三个参数为write back
+            if (blk == NULL) {                                                      //如果甚至分配不了
                 // no replaceable block available: give up, fwd to next level.
-                incMissCount(pkt);
+                incMissCount(pkt);                                                  //写回miss
                 return false;
             }
-            tags->insertBlock(pkt, blk);
+            tags->insertBlock(pkt, blk);                                            //更新了tag，但是好像没有更新data
 
             blk->status = (BlkValid | BlkReadable);
             if (pkt->isSecure()) {
                 blk->status |= BlkSecure;
             }
         }
-        blk->status |= BlkDirty;
+        blk->status |= BlkDirty;                                                    //将block标记为dirty
         if (pkt->isSupplyExclusive()) {
             blk->status |= BlkWritable;
         }
@@ -363,7 +434,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
         return true;
-    } else if ((blk != NULL) &&
+    } else if ((blk != NULL) &&                                                     //除去write back以外，发生了miss的情况
                (pkt->needsExclusive() ? blk->isWritable()
                                       : blk->isReadable())) {
         // OK to satisfy access
@@ -375,7 +446,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Can't satisfy access normally... either no block (blk == NULL)
     // or have block but need exclusive & only have shared.
 
-    incMissCount(pkt);
+    incMissCount(pkt);                                                              //只有cache miss程序才会执行到这里
 
     if (blk == NULL && pkt->isLLSC() && pkt->isWrite()) {
         // complete miss on store conditional... just give up now
@@ -439,6 +510,7 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
     if (doFastWrites && (pkt->cmd == MemCmd::WriteReq) &&
         (pkt->getSize() == blkSize) && (pkt->getOffset(blkSize) == 0)) {
         pkt->cmd = MemCmd::WriteInvalidateReq;
+	std::cout << "promote WriteInvalidate successed, tag: " << pkt->getAddr() << std::endl;//sxj
         DPRINTF(Cache, "packet promoted from Write to WriteInvalidate\n");
         assert(isTopLevel); // should only happen at L1 or I/O cache
     }
@@ -447,6 +519,22 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
+
+    //sxj
+    if (name() == "system.cpu.icache"){
+        std::cout << "enter the L1 i-cache" << std::endl;
+    }
+    else if (name() == "system.cpu.dcache"){
+        std::cout << "enter the L1 d-cache" << std::endl;
+    }
+    else if (name() == "system.l2"){
+        std::cout << "enter the L2 cache" << std::endl;
+    }
+    else if (name() == "system.l3"){
+        std::cout << "enter the L3 cache" << std::endl;
+    }
+    //sxj end
+
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
 //@todo Add back in MemDebug Calls
 //    MemDebug::cacheAccess(pkt);
@@ -467,6 +555,11 @@ Cache::recvTimingReq(PacketPtr pkt)
         assert(success);
         return true;
     }
+
+    //sxj
+    std::cout << "promote failured, tag: " << pkt->getAddr() << " cmd: " << pkt->cmd.toString(); //sxj
+    std::cout << std::endl;
+    //sxj end
 
     promoteWholeLineWrites(pkt);
 
@@ -529,12 +622,37 @@ Cache::recvTimingReq(PacketPtr pkt)
     Cycles lat = lookupLatency;
     CacheBlk *blk = NULL;
     bool satisfied = false;
+    DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     {
         PacketList writebacks;
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
         satisfied = access(pkt, blk, lat, writebacks);
-
+	//sxj
+	if(pkt->cmd == MemCmd::WriteReq){
+		if (satisfied){
+			std::cout << "write hit a ";
+			if (blk->isRobust)
+				std::cout << "Robust line" << std::endl;
+			else
+				std::cout << "non-Robust line" << std::endl;
+		}
+		else
+			std::cout << "write miss" << std::endl;
+	}
+        if(pkt->cmd == MemCmd::ReadReq){
+		if (satisfied){
+			std::cout << "read hit a ";
+			if (blk->isRobust) 
+				std::cout << "Robust line" << std::endl;
+			else
+				std::cout << "non-Robust line" << std::endl;
+		}
+		else
+			std::cout << "read miss" << std::endl;
+	}
+	//DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj	
+	//sxj end
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
         while (!writebacks.empty()) {
@@ -544,7 +662,8 @@ Cache::recvTimingReq(PacketPtr pkt)
             allocateWriteBuffer(wbPkt, forward_time, true);
             writebacks.pop_front();
         }
-    }
+    }                                                                                   //如果最终将pkt插入了cache，则satisfied == 1
+                                                                                        //否则为false
 
     // Here we charge the headerDelay that takes into account the latencies
     // of the bus, if the packet comes from it.
@@ -559,9 +678,9 @@ Cache::recvTimingReq(PacketPtr pkt)
     // track time of availability of next prefetch, if any
     Tick next_pf_time = MaxTick;
 
-    bool needsResponse = pkt->needsResponse();
+    bool needsResponse = pkt->needsResponse();                                          //判断pkt是否需要回复
 
-    if (satisfied) {
+    if (satisfied) {    
         // should never be satisfying an uncacheable access as we
         // flush and invalidate any existing block as part of the
         // lookup
@@ -579,7 +698,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         }
 
         if (needsResponse) {
-            pkt->makeTimingResponse();
+            pkt->makeTimingResponse();                                                  //根据commandInfo中的信息将其类型更改为对应的response形态
             // @todo: Make someone pay for this
             pkt->headerDelay = pkt->payloadDelay = 0;
 
@@ -588,21 +707,21 @@ Cache::recvTimingReq(PacketPtr pkt)
             // lat, neglecting responseLatency, modelling hit latency
             // just as lookupLatency or or the value of lat overriden
             // by access(), that calls accessBlock() function.
-            cpuSidePort->schedTimingResp(pkt, request_time);
+            cpuSidePort->schedTimingResp(pkt, request_time);                            //准备将包发回去，对于一次hit的read，数据已经拷贝进pkt了 
         } else {
             /// @todo nominally we should just delete the packet here,
             /// however, until 4-phase stuff we can't because sending
             /// cache is still relying on it
-            pendingDelete.push_back(pkt);
+            pendingDelete.push_back(pkt);                                               //如果不需要response，则进入删除队列
         }
-    } else {
+    } else {                                                                            //对于发生了miss的情况，暂时不会回发pkt
         // miss
 
-        Addr blk_addr = blockAlign(pkt->getAddr());
+        Addr blk_addr = blockAlign(pkt->getAddr());                                     //获得对应miss的blk的地址
 
         // ignore any existing MSHR if we are dealing with an
         // uncacheable request
-        MSHR *mshr = pkt->req->isUncacheable() ? nullptr :
+        MSHR *mshr = pkt->req->isUncacheable() ? nullptr :                              //在mshr中寻找可以进行融合的entry
             mshrQueue.findMatch(blk_addr, pkt->isSecure());
 
         // Software prefetch handling:
@@ -632,7 +751,7 @@ Cache::recvTimingReq(PacketPtr pkt)
                                              pkt->req->getFlags(),
                                              pkt->req->masterId());
                 pf = new Packet(req, pkt->cmd);
-                pf->allocate();
+                pf->allocate();                                                             //初始化
                 assert(pf->getAddr() == pkt->getAddr());
                 assert(pf->getSize() == pkt->getSize());
             }
@@ -651,7 +770,7 @@ Cache::recvTimingReq(PacketPtr pkt)
             pkt = pf;
         }
 
-        if (mshr) {
+        if (mshr) {                                                                 //mshr可以融合
             /// MSHR hit
             /// @note writebacks will be checked in getNextMSHR()
             /// for any conflicting requests to the same block
@@ -708,13 +827,13 @@ Cache::recvTimingReq(PacketPtr pkt)
             }
 
             if (pkt->cmd == MemCmd::Writeback ||
-                (pkt->req->isUncacheable() && pkt->isWrite())) {
+                (pkt->req->isUncacheable() && pkt->isWrite())) {                        //自左向右，首先是写回或者uncacheable，二者必为其一
                 // We use forward_time here because there is an
                 // uncached memory write, forwarded to WriteBuffer. It
                 // specifies the latency to allocate an internal buffer and to
                 // schedule an event to the queued port and also takes into
                 // account the additional delay of the xbar.
-                allocateWriteBuffer(pkt, forward_time, true);
+                allocateWriteBuffer(pkt, forward_time, true);                           //对于write，应该进入wrte buffer
             } else {
                 if (blk && blk->isValid()) {
                     // should have flushed and have no valid block
@@ -746,7 +865,9 @@ Cache::recvTimingReq(PacketPtr pkt)
                 // schedule an event to the queued port, when a cacheable miss
                 // is forwarded to MSHR queue.
                 // We take also into account the additional delay of the xbar.
-                allocateMissBuffer(pkt, forward_time, true);
+		//DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+                allocateMissBuffer(pkt, forward_time, true);                        //未命中mshr，且非上面if的就分配到mshr中
+		std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
             }
 
             if (prefetcher) {
@@ -758,10 +879,10 @@ Cache::recvTimingReq(PacketPtr pkt)
     }
     // Here we condiser just forward_time.
     if (next_pf_time != MaxTick)
-        requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),
+        requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),           //通知MemSide端口准备发送
                                                 next_pf_time));
-
-    return true;
+    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+    return true;                                                                    //到现在为止，作为一个write miss，现在进入了MSHR
 }
 
 
@@ -770,6 +891,9 @@ PacketPtr
 Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
                     bool needsExclusive) const
 {
+
+    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+
     bool blkValid = blk && blk->isValid();
 
     if (cpu_pkt->req->isUncacheable()) {
@@ -778,7 +902,7 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // and the cache could have filled again before we actually
         // send out the forwarded uncacheable request (blk could thus
         // be non-null)
-        return NULL;
+        return NULL;                                                        //对于uncacheable，直接返回NULL
     }
 
     if (!blkValid &&
@@ -786,10 +910,10 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // Writebacks that weren't allocated in access() and upgrades
         // from upper-level caches that missed completely just go
         // through.
-        return NULL;
+        return NULL;                                                        //对于write back以及upgrade也是返回NULL
     }
 
-    assert(cpu_pkt->needsResponse());
+    assert(cpu_pkt->needsResponse());                                       //上面两个都是不需要response的
 
     MemCmd cmd;
     // @TODO make useUpgrades a parameter.
@@ -801,6 +925,11 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // only reason to be here is that blk is shared
         // (read-only) and we need exclusive
         assert(needsExclusive);
+	//sxj
+	std::cout << blk->print() << std::endl;
+	std::cout << tags->regenerateBlkAddr(blk->tag, blk->set) << std::endl;
+	std::cout << cpu_pkt->cmd.toString() << std::endl;
+	//sxj end
         assert(!blk->isWritable());
         cmd = cpu_pkt->isLLSC() ? MemCmd::SCUpgradeReq : MemCmd::UpgradeReq;
     } else if (cpu_pkt->cmd == MemCmd::SCUpgradeFailReq ||
@@ -811,12 +940,12 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // all caches not being on the same local bus.
         cmd = MemCmd::SCUpgradeFailReq;
     } else if (cpu_pkt->isWriteInvalidate()) {
-        cmd = cpu_pkt->cmd;
+        cmd = cpu_pkt->cmd;                                                 //write在升级后就是write invalidate
     } else {
         // block is invalid
-        cmd = needsExclusive ? MemCmd::ReadExReq : MemCmd::ReadReq;
+        cmd = needsExclusive ? MemCmd::ReadExReq : MemCmd::ReadReq;         //剩下的read
     }
-    PacketPtr pkt = new Packet(cpu_pkt->req, cmd, blkSize);
+    PacketPtr pkt = new Packet(cpu_pkt->req, cmd, blkSize);                 //除去cmd是新的，其他的均继承
 
     // if there are sharers in the upper levels, pass that info downstream
     if (cpu_pkt->sharedAsserted()) {
@@ -833,7 +962,7 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
     // the packet should be block aligned
     assert(pkt->getAddr() == blockAlign(pkt->getAddr()));
 
-    pkt->allocate();
+    pkt->allocate();                                                        //分配内存
     DPRINTF(Cache, "%s created %s addr %#llx size %d\n",
             __func__, pkt->cmdString(), pkt->getAddr(), pkt->getSize());
     return pkt;
@@ -1069,7 +1198,7 @@ Cache::recvTimingResp(PacketPtr pkt)
 {
     assert(pkt->isResponse());
 
-    MSHR *mshr = dynamic_cast<MSHR*>(pkt->senderState);
+    MSHR *mshr = dynamic_cast<MSHR*>(pkt->senderState);                     //这里相当于假定在mshr一定有接收到的这个pkt对应的entry
     bool is_error = pkt->isError();
 
     assert(mshr);
@@ -1085,7 +1214,7 @@ Cache::recvTimingResp(PacketPtr pkt)
             pkt->isSecure() ? "s" : "ns");
 
     MSHRQueue *mq = mshr->queue;
-    bool wasFull = mq->isFull();
+    bool wasFull = mq->isFull();            //wasFull指的是mshr的full
 
     if (mshr == noTargetMSHR) {
         // we always clear at least one target
@@ -1094,11 +1223,11 @@ Cache::recvTimingResp(PacketPtr pkt)
     }
 
     // Initial target is used just for stats
-    MSHR::Target *initial_tgt = mshr->getTarget();
-    CacheBlk *blk = tags->findBlock(pkt->getAddr(), pkt->isSecure());
-    int stats_cmd_idx = initial_tgt->pkt->cmdToIndex();
+    MSHR::Target *initial_tgt = mshr->getTarget();                      //获得对应mshr的target
+    CacheBlk *blk = tags->findBlock(pkt->getAddr(), pkt->isSecure());   //调用findBlock看cache中是否会命中，对于miss的response来说，blk应为nullptr
+    int stats_cmd_idx = initial_tgt->pkt->cmdToIndex();                 //转换成int型返回
     Tick miss_latency = curTick() - initial_tgt->recvTime;
-    PacketList writebacks;
+    PacketList writebacks;                                              //新建一个pkt list
     // We need forward_time here because we have a call of
     // allocateWriteBuffer() that need this parameter to specify the
     // time to request the bus.  In this case we use forward latency
@@ -1107,7 +1236,7 @@ Cache::recvTimingResp(PacketPtr pkt)
     // bus.
     Tick forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
 
-    if (pkt->req->isUncacheable()) {
+    if (pkt->req->isUncacheable()) {                                        //现在isUncacheable不会再直接发送了
         assert(pkt->req->masterId() < system->maxMasters());
         mshr_uncacheable_lat[stats_cmd_idx][pkt->req->masterId()] +=
             miss_latency;
@@ -1118,7 +1247,8 @@ Cache::recvTimingResp(PacketPtr pkt)
     }
 
     bool is_fill = !mshr->isForward &&
-        (pkt->isRead() || pkt->cmd == MemCmd::UpgradeResp);
+        (pkt->isRead() || pkt->cmd == MemCmd::UpgradeResp);                 //这里的upgrade也是与一致性有关的操作
+                                                                            //现在看来，fill指的应该是要将pkt中信息
 
     if (is_fill && !is_error) {
         DPRINTF(Cache, "Block for addr %#llx being updated in Cache\n",
@@ -1127,19 +1257,20 @@ Cache::recvTimingResp(PacketPtr pkt)
         // give mshr a chance to do some dirty work
         mshr->handleFill(pkt, blk);
 
-        blk = handleFill(pkt, blk, writebacks);
+        blk = handleFill(pkt, blk, writebacks);                             //函数内调用了allocateBlock函数，存在替换
         assert(blk != NULL);
     }
 
     // First offset for critical word first calculations
     int initial_offset = initial_tgt->pkt->getOffset(blkSize);
 
-    while (mshr->hasTargets()) {
+    while (mshr->hasTargets()) {                                            //只要刚刚的mshr中还有target，就都要完成
         MSHR::Target *target = mshr->getTarget();
-        Packet *tgt_pkt = target->pkt;
+        Packet *tgt_pkt = target->pkt;                                      //tgt_pkt指的是选中的一个target对应的pkt
 
-        switch (target->source) {
-          case MSHR::Target::FromCPU:
+        switch (target->source) {                                           //对于mshr中同一个entry中的所有target，检查访问来源
+                                                                            //一共只有三种：CPU、snoop、prefetch
+          case MSHR::Target::FromCPU:                                       //如果来自CPU
             Tick completion_time;
             // Here we charge on completion_time the delay of the xbar if the
             // packet comes from it, charged on headerDelay.
@@ -1161,15 +1292,17 @@ Cache::recvTimingResp(PacketPtr pkt)
             // cannot actually be determined until examining the stored MSHR
             // state. We "catch up" with that logic here, which is duplicated
             // from above.
-            if (tgt_pkt->isWriteInvalidate() && isTopLevel) {
+            if (tgt_pkt->isWriteInvalidate() && isTopLevel) {               //这里仅当cache为Toplevel，且找到的taget内的pkt为write invalidate
+                                                                            //write invalidate就是由write升级得到的
                 assert(!is_error);
 
                 // NB: we use the original packet here and not the response!
                 mshr->handleFill(tgt_pkt, blk);
-                blk = handleFill(tgt_pkt, blk, writebacks);
+                blk = handleFill(tgt_pkt, blk, writebacks);                 //只有在L1 cache中才会进行write miss的数据更新啊
+
                 assert(blk != NULL);
 
-                is_fill = true;
+                is_fill = true;                                             //由于发生了填充，故设置fill为true
             }
 
             if (is_fill) {
@@ -1259,10 +1392,10 @@ Cache::recvTimingResp(PacketPtr pkt)
             panic("Illegal target->source enum %d\n", target->source);
         }
 
-        mshr->popTarget();
+        mshr->popTarget();                                                  //处理完一个target就pop一个
     }
 
-    if (blk && blk->isValid()) {
+    if (blk && blk->isValid()) {                                            //这里blk不为空，要么是findBlock命中，要么是handleFill中分配成功
         if ((pkt->isInvalidate() || mshr->hasPostInvalidate()) &&
             (!pkt->isWriteInvalidate() || !isTopLevel)) {
             assert(blk != tempBlock);
@@ -1321,6 +1454,7 @@ Cache::recvTimingResp(PacketPtr pkt)
 
     DPRINTF(Cache, "Leaving %s with %s for addr %#llx\n", __func__,
             pkt->cmdString(), pkt->getAddr());
+    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     delete pkt;
 }
 
@@ -1420,7 +1554,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
     if (blk->isValid()) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
         MSHR *repl_mshr = mshrQueue.findMatch(repl_addr, blk->isSecure());
-        if (repl_mshr) {
+        if (repl_mshr) {                                                                //找到的victim在同时又在mshr中找到
             // must be an outstanding upgrade request
             // on a block we're about to replace...
             assert(!blk->isWritable() || blk->isDirty());
@@ -1444,6 +1578,83 @@ Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
     return blk;
 }
 
+//sxj
+CacheBlk*
+Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, PacketList &writebacks)
+{
+    CacheBlk *blk;
+    if (is_write)
+        blk = tags->findVictim(addr);
+    //the findVictim for Global cache
+    else if (is_read)
+        blk = tags->findVictimNR(addr);
+    //findVictimNR is a new function
+    else
+        blk = tags->findVictim(addr);
+
+    if (blk->isValid() && !blk->isMissed) {
+        Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
+        MSHR *repl_mshr = mshrQueue.findMatch(repl_addr, blk->isSecure());
+        if (repl_mshr) {
+            // must be an outstanding upgrade request
+            // on a block we're about to replace...
+            assert(!blk->isWritable() || blk->isDirty());
+            assert(repl_mshr->needsExclusive());
+            // too hard to replace block with transient state
+            // allocation failed, block not inserted
+            return NULL;
+        } else {
+            DPRINTF(Cache, "replacement: replacing %#llx (%s) with %#llx (%s): %s\n",
+                    repl_addr, blk->isSecure() ? "s" : "ns",
+                    addr, is_secure ? "s" : "ns",
+                    blk->isDirty() ? "writeback" : "clean");
+
+            if (blk->isDirty() && !blk->isMissed) {
+                // Save writeback packet for handling by caller
+                writebacks.push_back(writebackBlk(blk));
+            }
+        }
+    }
+
+    if (is_write && !blk->isRobust){
+	std::cout << "write miss with a non-Robust victim line" << std::endl;
+        CacheBlk *Rblk = tags->findVictimR(addr);
+        if (Rblk->isValid()) {
+            Addr round_addr = tags->regenerateBlkAddr(Rblk->tag, Rblk->set);
+            MSHR *round_mshr = mshrQueue.findMatch(round_addr, Rblk->isSecure());
+            if (round_mshr) {
+                // must be an outstanding upgrade request
+                // on a block we're about to round...
+                assert(!Rblk->isWritable() || Rblk->isDirty());
+                assert(round_mshr->needsExclusive());
+                // too hard to round block with transient state
+                // allocation failed, block not inserted
+                return NULL;
+            } else {
+                DPRINTF(Cache, "roundment: rounding %#llx (%s) with %#llx (%s): %s\n",
+                        round_addr, Rblk->isSecure() ? "s" : "ns",
+                        addr, is_secure ? "s" : "ns",
+                        Rblk->isDirty() ? "writeback" : "clean");
+
+                if (Rblk->isDirty()) {
+                    // Save writeback packet for handling by caller
+                    writebacks.push_back(writebackBlk(Rblk));
+                }
+            }
+        }
+        std::cout << "doing a block rounding!!" << std::endl;
+        tags->blockRound(blk, Rblk);
+        rounds++;
+        //actually copy Rblk's all info to blk
+        blk = Rblk;
+        //after round, Rblk should be the cell going to be restore.
+    }
+
+    return blk;
+}
+//sxj end
+
+
 
 // Note that the reason we return a list of writebacks rather than
 // inserting them directly in the write buffer is that this function
@@ -1454,24 +1665,27 @@ CacheBlk*
 Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
 {
     assert(pkt->isResponse() || pkt->isWriteInvalidate());
-    Addr addr = pkt->getAddr();
+    Addr addr = pkt->getAddr();                                                     //通过参数中的pkt获取地址
     bool is_secure = pkt->isSecure();
 #if TRACING_ON
     CacheBlk::State old_state = blk ? blk->status : 0;
 #endif
 
-    if (blk == NULL) {
+    if (blk == NULL) {                                                              //这里的blk是试图通过findBlock查找的结果
+                                                                                    //对于write miss来说这里应该是NULL
         // better have read new data...
-        assert(pkt->hasData());
+        assert(pkt->hasData());                                                     //无论read miss还是write miss均hasData
 
         // only read responses and (original) write invalidate req's have data;
         // note that we don't write the data here for write invalidate - that
         // happens in the subsequent satisfyCpuSideRequest.
-        assert(pkt->isRead() || pkt->isWriteInvalidate());
+        assert(pkt->isRead() || pkt->isWriteInvalidate());                          //理论上的确只有这两种情况
 
+        bool isRead = pkt->isRead();
+        bool isWrite = pkt->isWriteInvalidate()||pkt->cmd == MemCmd::WriteReq;
         // need to do a replacement
-        blk = allocateBlock(addr, is_secure, writebacks);
-        if (blk == NULL) {
+        blk = allocateBlock(addr, is_secure, isRead, isWrite, writebacks);                           //利用findVictim进行eviction
+        if (blk == NULL) {                                                              //如果replace失败
             // No replaceable block... just use temporary storage to
             // complete the current request and then get rid of it
             assert(!tempBlock->isValid());
@@ -1883,6 +2097,7 @@ Cache::getNextMSHR()
         }
 
         // No conflicts; issue write
+	std::cout << "sending from write buffer" << std::endl;//sxj
         return write_mshr;
     } else if (miss_mshr) {
         // need to check for conflicting earlier writeback
@@ -1942,22 +2157,44 @@ Cache::getNextMSHR()
 PacketPtr
 Cache::getTimingPacket()
 {
-    MSHR *mshr = getNextMSHR();
-
+    //sxj
+    if (name() == "system.cpu.icache"){
+        std::cout << "get pkt from L1 i-cache" << std::endl;
+    }
+    else if (name() == "system.cpu.dcache"){
+        std::cout << "get pkt from L1 d-cache" << std::endl;
+    }
+    else if (name() == "system.l2"){
+        std::cout << "get pkt from L2 cache" << std::endl;
+    }
+    else if (name() == "system.l3"){
+        std::cout << "get pkt from L3 cache" << std::endl;
+    }
+    //sxj end
+    DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+    MSHR *mshr = getNextMSHR();                                                 //从MSHR或者write buffer中选择一个服务对象
+                                                                                //看来结构体是共通的
+    //sxj
+    //std::cout << "now the cache: " << std::endl;
+    //tags->print();
+    //std::cout << std::endl;
+    //sxj end
     if (mshr == NULL) {
         return NULL;
     }
 
     // use request from 1st target
-    PacketPtr tgt_pkt = mshr->getTarget()->pkt;
+    PacketPtr tgt_pkt = mshr->getTarget()->pkt;                                 //获取对应服务对象的pkt，作为tgt_pkt
     PacketPtr pkt = NULL;
 
     DPRINTF(CachePort, "%s %s for addr %#llx size %d\n", __func__,
             tgt_pkt->cmdString(), tgt_pkt->getAddr(), tgt_pkt->getSize());
 
-    if (mshr->isForwardNoResponse()) {
+    if (mshr->isForwardNoResponse()) {                                          //从CPU发出且不需要response
         // no response expected, just forward packet as it is
-        assert(tags->findBlock(mshr->blkAddr, mshr->isSecure) == NULL);
+	
+	//sxj 本版本没有clean write的更新，只能将这里注释掉了
+        //assert(tags->findBlock(mshr->blkAddr, mshr->isSecure) == NULL);         //确保准备发出的对象在cache内找不到
         pkt = tgt_pkt;
     } else {
         CacheBlk *blk = tags->findBlock(mshr->blkAddr, mshr->isSecure);
@@ -2011,7 +2248,7 @@ Cache::getTimingPacket()
 
         }
 
-        pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());
+        pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());               //根据现有的tgt_pkt生成一个适合向后发送的pkt
 
         mshr->isForward = (pkt == NULL);
 
@@ -2028,6 +2265,7 @@ Cache::getTimingPacket()
 
     assert(pkt != NULL);
     pkt->senderState = mshr;
+    std::cout << "ready to send a request, tag: " << pkt->getAddr() << std::endl;
     return pkt;
 }
 
@@ -2104,7 +2342,7 @@ Cache::CpuSidePort::recvTimingReq(PacketPtr pkt)
     // the moment that flag is only set in the cache itself
     if (pkt->memInhibitAsserted()) {
         // do not change the current retry state
-        bool M5_VAR_USED bypass_success = cache->recvTimingReq(pkt);
+        bool M5_VAR_USED bypass_success = cache->recvTimingReq(pkt);                //这里引用了recvTimingReq
         assert(bypass_success);
         return true;
     } else if (blocked || mustSendRetry) {
@@ -2188,8 +2426,10 @@ Cache::CacheReqPacketQueue::sendDeferredPacket()
     // from the MSHR queue or write queue
     assert(deferredPacketReadyTime() == MaxTick);
 
+    
+
     // check for request packets (requests & writebacks)
-    PacketPtr pkt = cache.getTimingPacket();
+    PacketPtr pkt = cache.getTimingPacket();                                        //准备好下一个pkt
     if (pkt == NULL) {
         // can happen if e.g. we attempt a writeback and fail, but
         // before the retry, the writeback is eliminated because
