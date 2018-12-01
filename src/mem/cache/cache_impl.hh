@@ -64,6 +64,8 @@
 #include "mem/cache/cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
+//sxj
+#include "math.h"
 
 Cache::Cache(const Params *p)
     : BaseCache(p),
@@ -143,7 +145,7 @@ Cache::cmpAndSwap(CacheBlk *blk, PacketPtr pkt)
 
 void
 Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
-                             bool deferred_response, bool pending_downgrade)
+                             bool deferred_response, bool pending_downgrade)//解决对Cache的访问，包括读写
 {
     assert(pkt->isRequest());
 
@@ -162,11 +164,23 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
     if (pkt->cmd == MemCmd::SwapReq) {
         cmpAndSwap(blk, pkt);
     } else if (pkt->isWrite() &&
-               (!pkt->isWriteInvalidate() || isTopLevel)) {
+               (!pkt->isWriteInvalidate() || isTopLevel)) {//仅在L1 cache内写入
         assert(blk->isWritable());
         // Write or WriteInvalidate at the first cache with block in Exclusive
         if (blk->checkWrite(pkt)) {
-            pkt->writeDataToBlock(blk->data, blkSize);
+
+            pkt->writeDataToBlock(blk->data, blkSize);//satisfyCpuSideRequest函数中进行数据write的部分
+
+            //sxj
+            uint8_t tempdata = *(blk->data);
+            int zeros = 0;
+            while (tempdata+1){
+                zeros++;
+                tempdata |= tempdata + 1;
+            }
+            blk->zeros = zeros;
+            //sxj end
+
         }
         // Always mark the line as dirty even if we are a failed
         // StoreCond so we supply data to any snoops that have
@@ -175,11 +189,44 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         blk->status |= BlkDirty;
         DPRINTF(Cache, "%s for %s addr %#llx size %d (write)\n", __func__,
                 pkt->cmdString(), pkt->getAddr(), pkt->getSize());
-    } else if (pkt->isRead()) {
+    } else if (pkt->isRead()) {//每一级Cache均会进行Read hit返回数据的分配
         if (pkt->isLLSC()) {
             blk->trackLoadLocked(pkt);
         }
         pkt->setDataFromBlock(blk->data, blkSize);
+
+        //sxj
+        //这里进行纠错
+        int zerosData = 0, zerosZeros = 0;
+        uint8_t tempdata = *(blk->data);
+        uint8_t tempzeros = blk->zeros;
+        while (tempdata+1){
+            zerosData++;
+            tempdata |= tempdata + 1;
+        }
+        while (tempzeros+1){
+            zerosZeros++;
+            tempzeros |= tempzeros + 1;
+        }
+        int zerosAll = zerosData + zerosZeros;
+
+        float singleFaultRate = 0.999;
+        int faultRate = pow(singleFaultRate, zerosAll)*1000;
+        if(rand()%1000 > faultRate){//发生错误
+            faultReads++;
+            blk->isFault = true;//设置错误标志
+            blk->isDisabled = true;
+        }
+
+        //找一个未设置isFault的，互换标志即可
+        CacheBlk *NFblk = tags->findNonFault(pkt->getAddr());
+        if(NFblk){
+            faultRemaps++;
+            blk->isFault = false;
+            NFblk->isFault = true;
+        }
+        //sxj end
+
         if (pkt->getSize() == blkSize) {
             // special handling for coherent block requests from
             // upper-level caches
@@ -346,7 +393,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 incMissCount(pkt);
                 return false;
             }
-            tags->insertBlock(pkt, blk);
+
+            tags->insertBlock(pkt, blk);//这里针对写回情况
 
             blk->status = (BlkValid | BlkReadable);
             if (pkt->isSecure()) {
@@ -359,7 +407,19 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         }
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
+
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
+
+        //sxj
+        uint8_t tempdata = *(blk->data);
+        int zeros = 0;
+        while (tempdata+1){
+            zeros++;
+            tempdata |= tempdata + 1;
+        }
+        blk->zeros = zeros;
+        //sxj end
+
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
         return true;
@@ -1176,6 +1236,18 @@ Cache::recvTimingResp(PacketPtr pkt)
                 satisfyCpuSideRequest(tgt_pkt, blk,
                                       true, mshr->hasPostDowngrade());
 
+                //sxj
+                if (blk->isDisabled && pkt->isRead()){
+                    if (name() == "system.cpu.icache" || name() == "system.cpu.dcache"){
+                        completion_time += 1500;
+                    }
+                    else if (name() == "system.l2" || name() == "system.l3"){
+                        completion_time += 3000;
+                    }
+                    blk->isDisabled = false;
+                }
+                //sxj end
+
                 // How many bytes past the first request is this one
                 int transfer_offset =
                     tgt_pkt->getOffset(blkSize) - initial_offset;
@@ -1524,6 +1596,17 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         assert(pkt->getSize() == blkSize);
 
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
+
+        //sxj
+        uint8_t tempdata = *(blk->data);
+        int zeros = 0;
+        while (tempdata+1){
+            zeros++;
+            tempdata |= tempdata + 1;
+        }
+        blk->zeros = zeros;
+        //sxj end
+
     }
     // We pay for fillLatency here.
     blk->whenReady = clockEdge() + fillLatency * clockPeriod() +

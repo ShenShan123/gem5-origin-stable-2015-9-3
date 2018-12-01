@@ -195,6 +195,19 @@ BaseCache::regStats()
 #define SUM_NON_DEMAND(s) \
     (s[MemCmd::SoftPFReq] + s[MemCmd::HardPFReq])
 
+
+    //sxj
+    faultReads
+        .name(name() + ".fault_reads")
+        .desc("number of read with fault")
+        ;
+
+    faultRemaps
+        .name(name() + ".fault_remaps")
+        .desc("number of remaps caused by fault")
+        ;
+    //sxj end
+
     demandHits
         .name(name() + ".demand_hits")
         .desc("number of demand (read+write) hits")

@@ -118,6 +118,17 @@ class CacheBlk
     /** whether this block has been touched */
     bool isTouched;
 
+    //sxj
+    /** whether this block has a fault*/
+    bool isFault;
+
+    /** whether this block is disabled*/
+    bool isDisabled;
+
+    /** the number of zeros*/
+    int zeros; 
+    //sxj end
+
     /** Number of references to this block since it was brought in. */
     int refCount;
 
@@ -171,7 +182,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), refCount(0),
+          set(-1), isTouched(false), isFault(false), isDisabled(false), refCount(0),    //sxj
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

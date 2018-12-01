@@ -344,6 +344,13 @@ class BaseCache : public MemObject
 
     /** Number of hits per thread for each type of command. @sa Packet::Command */
     Stats::Vector hits[MemCmd::NUM_MEM_CMDS];
+
+    //sxj
+    Stats::Scalar faultReads;
+
+    Stats::Scalar faultRemaps;//有可能发生错误而无法进行重映射（全是错的）
+    //sxj end
+
     /** Number of hits for demand accesses. */
     Stats::Formula demandHits;
     /** Number of hit for all accesses. */

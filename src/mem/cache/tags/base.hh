@@ -209,6 +209,10 @@ class BaseTags : public ClockedObject
 
     virtual CacheBlk* findVictim(Addr addr) = 0;
 
+    //sxj
+    virtual CacheBlk* findNonFault(Addr addr){return NULL;}
+    //sxj end
+
     virtual int extractSet(Addr addr) const = 0;
 
     virtual void forEachBlk(CacheBlkVisitor &visitor) = 0;

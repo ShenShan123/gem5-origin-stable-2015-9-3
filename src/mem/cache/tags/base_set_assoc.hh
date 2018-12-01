@@ -237,6 +237,26 @@ public:
         return blk;
     }
 
+
+    //sxj
+    //** find a non-fault block*/
+    CacheBlk* findNonFault(Addr addr)
+    {
+        BlkType *blk = NULL;
+        int set = extractSet(addr);
+
+        // prefer to evict an invalid block
+        for (int i = 0; i < assoc; ++i) {
+            blk = sets[set].blks[i];
+            if (!blk->isFault) {
+                break;
+            }
+        }
+
+        return blk;
+    }
+    //sxj end
+
     /**
      * Insert the new block into the cache.
      * @param pkt Packet holding the address to update
