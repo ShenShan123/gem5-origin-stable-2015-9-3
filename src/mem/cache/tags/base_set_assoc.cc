@@ -73,7 +73,7 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
     setShift = floorLog2(blkSize);
     setMask = numSets - 1;
     tagShift = setShift + floorLog2(numSets);
-    inform("name %s, setShift %d, tagShift %d", name(), setShift, tagShift);
+    //inform("name %s, setShift %d, tagShift %d", name(), setShift, tagShift);
     /** @todo Make warmup percentage a parameter. */
     warmupBound = numSets * assoc;
 

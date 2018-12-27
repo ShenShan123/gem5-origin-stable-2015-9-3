@@ -180,12 +180,14 @@ BaseTags::regStats()
     offWays
         .init(10)
         .name(name() + ".off_ways")
-        .desc("num of ways that are turned off");
+        .desc("num of ways that are turned off")
+        .flags(nozero | nonan);
 
     fakeMisses
         .init(10)
         .name(name() + ".fake_misses")
-        .desc("the hit ways that are turned off");
+        .desc("the hit ways that are turned off")
+        .flags(nozero | nonan);
 
     /*fakeHits
         .name(name() + ".fake_hits")
@@ -197,7 +199,8 @@ BaseTags::regStats()
 
     tagMisSpec
         .name(name() + ".tag_misspec")
-        .desc("num of wrong tag reads");
+        .desc("num of wrong tag reads")
+        .flags(nozero | nonan);
     
     /*totTagMisSpec
         .name(name() + ".tot_tag_misspec")
@@ -212,15 +215,18 @@ BaseTags::regStats()
     hitDataWrong
         .init(10)
         .name(name() + ".hit_data_wrong")
-        .desc("num of wrong data that way is hit");
+        .desc("num of wrong data that way is hit")
+        .flags(nozero | nonan);
 
     wayPredCorrect
         .name(name() + ".way_prediction_correct")
-        .desc("num of correct way predictions");
+        .desc("num of correct way predictions")
+        .flags(nozero | nonan);
 
     partialTag
         .name(name() + ".partial_tag_offways")
-        .desc("num of ways that partial tags mismatch");
+        .desc("num of ways that partial tags mismatch")
+        .flags(nozero | nonan);
     // end
 
     registerDumpCallback(new BaseTagsDumpCallback(this));

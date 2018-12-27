@@ -82,12 +82,12 @@ class CacheSet
     Blktype* findBlk(Addr tag, bool is_secure) const ;
 
     // by shen
-    Blktype* findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector & off, Stats::Vector & faMis, 
-        bool & error, Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
+    Blktype* findBlk(Addr tag, bool is_secure, int& way_id, int l, Stats::Vector & off, Stats::Vector & faMis, 
+        Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
         Stats::Scalar & ptOffs, Stats::Vector & hit, Stats::Vector & mis);
     
-    Blktype* findBlk(Addr tag, bool is_secure, Stats::Vector & off, Stats::Vector & faMis, 
-        bool & error, Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
+    Blktype* findBlk(Addr tag, bool is_secure, int l, Stats::Vector & off, Stats::Vector & faMis, 
+        Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
         Stats::Scalar & ptOffs, Stats::Vector & hit, Stats::Vector & mis);
     // end
 
@@ -146,8 +146,8 @@ inline int countBits(Addr n)
 
 template <class Blktype>
 Blktype*
-CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector & off, Stats::Vector & faMis, 
-    bool & error, Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
+CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, int l, Stats::Vector & off, Stats::Vector & faMis, 
+    Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
     Stats::Scalar & ptOffs, Stats::Vector & hit, Stats::Vector & mis)
 {
     /**
@@ -158,16 +158,15 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector 
 
     // by shen
     // generate a number with uniform distribution
-    int numTagBits = 28;
+    int numTagBits = l == 1 ? 27 : 21; // L1 27 bit tag; L2 21 bit tag
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine e (seed);
     std::uniform_real_distribution<double> unif(0.0,1.0);
-    double bitError = 0.01; // P(1 bit bit error) = 0.0102
-    double tagErrorRate = 0.0088; // the tag mis-speculation in double sensing, P(tag error) = 0.0088
-    double dataErrorRate = 0.02; // default data is 64 bits, P(data error) = 0.0199
-    int numTagErrors = 0;
-    std::bitset<28> errorMask;
-    // tag timing speculations
+    double tagBitError = 0.04; // P(1 bit bit error) = 0.0102
+    double probL1Unr = 0.062; // default data is 64 bits
+    double probL2Unr = 0.12; // default data is 128 bits
+    std::bitset<27> errorMask;
+    // tag peeking
     int hamDist = -1;
     Addr specTag;
 
@@ -177,7 +176,7 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector 
             way_id = i;
 
         for (int j = 0; j < numTagBits; ++j)
-            errorMask[j] = bitError >= unif(e); // generate error bits
+            errorMask[j] = tagBitError >= unif(e); // generate error bits
             
         Addr mask = errorMask.to_ullong();
         specTag = mask ^ blks[i]->tag;
@@ -195,6 +194,8 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector 
         off[8] += (hamDist > 8);
         off[9] += (hamDist > 9);
 
+        double pkgError = unif(e);
+
         if (way_id == i) {
             // actual hit but we turn off the way
             faMis[0] += (hamDist > 0);
@@ -208,30 +209,14 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector 
             faMis[8] += (hamDist > 8);
             faMis[9] += (hamDist > 9);
             //inform("origin tag %lx, spec tag %lx, req tag %lx, ham dist %d", blks[i]->tag, specTag, tag, hamDist);
+            if (hamDist > 1) blks[i]->wrongTagPeeking = true;
+
+            // i and dcache port is 64 bit width. l2 cache read port is 128 bit width.
+            blks[i]->unreliableRead = pkgError < (l == 1 ? probL1Unr : probL2Unr);
+            hdWrong[l] += blks[i]->unreliableRead;
+            //if (l == 2) inform("L%d unreliable reading:%d, way: %d, rand prob %f", l, blks[i]->unreliableRead, i, pkgError);
         }
-
-        double ter = unif(e);
-        double der = unif(e);
-        // tags will be mis-speculative when the ways are active
-        numTagErrors += (ter < tagErrorRate);
-
-        if (way_id == i) { // data mis-speculation will occur when the way is active and the tag is correct.
-            hdWrong[0] += !(hamDist > 0) && (der < dataErrorRate);
-            hdWrong[1] += !(hamDist > 1) && (der < dataErrorRate);
-            hdWrong[2] += !(hamDist > 2) && (der < dataErrorRate);
-            hdWrong[3] += !(hamDist > 3) && (der < dataErrorRate);
-            hdWrong[4] += !(hamDist > 4) && (der < dataErrorRate);
-            hdWrong[5] += !(hamDist > 5) && (der < dataErrorRate);
-            hdWrong[6] += !(hamDist > 6) && (der < dataErrorRate);
-            hdWrong[7] += !(hamDist > 7) && (der < dataErrorRate);
-            hdWrong[8] += !(hamDist > 8) && (der < dataErrorRate);
-            hdWrong[9] += !(hamDist > 9) && (der < dataErrorRate);
-        }
-
-        ptOffs += ((blks[i]->tag ^ tag) & 0x7) != 0;
     }
-
-    tagMisSpec += (numTagErrors > 0); //totTagMisSpec += numTagErrors;
 
     for (int i = 0; i < assoc; ++i) {
         // hamming dist distribution when 
@@ -251,12 +236,12 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Vector 
 
 template <class Blktype>
 Blktype*
-CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, Stats::Vector & off, Stats::Vector & faMis, 
-    bool & error, Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
+CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int l, Stats::Vector & off, Stats::Vector & faMis, 
+    Stats::Scalar & tagMisSpec, Stats::Vector & hdWrong, Stats::Scalar & waypred, 
     Stats::Scalar & ptOffs, Stats::Vector & hit, Stats::Vector & mis)
 {
     int ignored_way_id;
-    return findBlk(tag, is_secure, ignored_way_id, off, faMis, error, tagMisSpec, hdWrong, waypred, ptOffs, hit, mis);
+    return findBlk(tag, is_secure, ignored_way_id, l, off, faMis, tagMisSpec, hdWrong, waypred, ptOffs, hit, mis);
 }
 // end, by shen
 

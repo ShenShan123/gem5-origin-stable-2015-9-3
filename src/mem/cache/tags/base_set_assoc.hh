@@ -51,6 +51,7 @@
 #include <cassert>
 #include <cstring>
 #include <list>
+#include <string>
 
 #include "mem/cache/tags/base.hh"
 #include "mem/cache/tags/cacheset.hh"
@@ -178,17 +179,27 @@ public:
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
         // change by shen
-        bool error = false;
-        BlkType *blk = sets[set].findBlk(tag, is_secure, offWays, fakeMisses, error, tagMisSpec, 
+        std::string cacheName(name());
+        BlkType *blk = NULL;
+        int level = 0;
+
+        if ((cacheName.find("dcache") != cacheName.npos) || (cacheName.find("icache") != cacheName.npos)) {// i and dcache port is 64 bit width.
+            level = 1;
+            blk = sets[set].findBlk(tag, is_secure, level, offWays, fakeMisses, tagMisSpec, 
             hitDataWrong, wayPredCorrect, partialTag, sameBitsHitDistr, sameBitsMisDistr);
+        }
+        else if (cacheName.find("l2") != cacheName.npos) {
+            level = 2;
+            blk = sets[set].findBlk(tag, is_secure, level, offWays, fakeMisses, tagMisSpec, 
+            hitDataWrong, wayPredCorrect, partialTag, sameBitsHitDistr, sameBitsMisDistr);
+        }
+        else 
+            blk = sets[set].findBlk(tag, is_secure);
         
         setReads++;
-
-        lat = accessLatency;
-        if (error && (name() == "system.cpu.icache.tags" || name() == "system.cpu.dcache.tags")) {
-            ++lat;
-        }
         // end
+        
+        lat = accessLatency;
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on
@@ -207,6 +218,13 @@ public:
                 && cache->ticksToCycles(blk->whenReady - curTick())
                 > accessLatency) {
                 lat = cache->ticksToCycles(blk->whenReady - curTick());
+            
+                // added by shen
+                if (blk->wrongTagPeeking)
+                    lat += level == 1 ? Cycles(2) : Cycles(6);
+                if (blk->unreliableRead)
+                    lat += level == 1? Cycles(2) : Cycles(5);
+                // end
             }
             blk->refCount += 1;
         }

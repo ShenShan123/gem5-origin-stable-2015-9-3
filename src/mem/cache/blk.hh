@@ -100,6 +100,11 @@ class CacheBlk
     /** the number of bytes stored in this block. */
     int size;
 
+    // added by shen
+    bool wrongTagPeeking;
+    bool unreliableRead;
+    // end
+
     /** block state: OR of CacheBlkStatusBit */
     typedef unsigned State;
 
@@ -170,7 +175,9 @@ class CacheBlk
 
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
-          asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
+          asid(-1), tag(0), data(0) ,size(0), 
+          wrongTagPeeking(false), unreliableRead(false), /* added by shen*/
+          status(0), whenReady(0),
           set(-1), isTouched(false), refCount(0),
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
@@ -192,6 +199,10 @@ class CacheBlk
         set = rhs.set;
         refCount = rhs.refCount;
         task_id = rhs.task_id;
+        // added by shen. Just ensure no bugs.
+        wrongTagPeeking = rhs.wrongTagPeeking;
+        unreliableRead = rhs.unreliableRead;
+        // end
         return *this;
     }
 
