@@ -220,10 +220,14 @@ public:
                 lat = cache->ticksToCycles(blk->whenReady - curTick());
             
                 // added by shen
-                if (blk->wrongTagPeeking)
+                if (blk->wrongTagPeeking) {
                     lat += level == 1 ? Cycles(2) : Cycles(6);
-                if (blk->unreliableRead)
-                    lat += level == 1? Cycles(2) : Cycles(5);
+                    blk->wrongTagPeeking = false; // clean the error flag
+                }
+                if (blk->unreliableRead) {
+                    lat += level == 1 ? Cycles(2) : Cycles(5);
+                    blk->unreliableRead = false; // clean the error flag
+                }
                 // end
             }
             blk->refCount += 1;
