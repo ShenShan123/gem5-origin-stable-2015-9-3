@@ -77,8 +77,10 @@ LRU::findVictim(Addr addr)
     int set = extractSet(addr);
     // changed by shen
     BlkType *blk = NULL;
+    std::string cacheName(name());
 
-    if (!(name() == "system.cpu.dcache.tags" || name() == "system.cpu.icache.tags" || name() == "system.l2.tags")) {
+    if (cacheName.find("l2") == cacheName.npos) {
+        // grab a replacement candidate
         blk = sets[set].blks[assoc - 1];
         blk->faultyMatch = true;
         
@@ -90,7 +92,6 @@ LRU::findVictim(Addr addr)
     }
 
     int8_t i;
-    // grab a replacement candidate
     for(i = assoc - 1; i >= 0; --i) {
         int numFaults = 0;
 
@@ -104,17 +105,14 @@ LRU::findVictim(Addr addr)
             blk->faultyMatch = true;
             // assign current CM to the global CM
             std::memcpy(&comprMap[(set * assoc + sets[set].blks[i]->physicalWay) * (blkSize / SUBBLOCKSIZE)], curBlockMC, sizeof(bool) * blkSize / SUBBLOCKSIZE);
-            //for (uint8_t j = 0; j < blkSize / SUBBLOCKSIZE; ++j)
-                //std::cout << " " << curBlockMC[i] << " " << comprMap[(set * assoc + sets[set].blks[i]->physicalWay) * (blkSize / SUBBLOCKSIZE) + i];
-            DPRINTF(CacheRepl, "%s, num faults %d, num null blocks %d, physicalWay %d, way %d", name(), numFaults, numNullSubblocks, blk->physicalWay, i);
+            //inform("%s, num faults %d, num null blocks %d, physicalWay %d, way %d", name(), numFaults, numNullSubblocks, blk->physicalWay, i);
             break;
         }
     }
 
     // if we don't find the victim, invalidate the LRU way
     if (i == -1) {
-        //blk = sets[set].blks[assoc - 1];
-        //blk->faultyMatch = false;
+        ++unmatchedFaultyBlocks; // no victim can be found
         DPRINTF(CacheRepl, "address: %llx, no victim found, blk Ptr %llx", addr, blk);
     }
     // end, by shen

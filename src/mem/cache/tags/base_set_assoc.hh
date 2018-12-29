@@ -187,7 +187,6 @@ public:
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
                                  int context_src)
     {
-        inform("%s accessBlock", name());
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
         BlkType *blk = sets[set].findBlk(tag, is_secure);

@@ -65,8 +65,6 @@ PacketQueue::retry()
     assert(waitingOnRetry);
     waitingOnRetry = false;
     sendDeferredPacket();
-    inform("return PacketQueue::retry"); // by shen
-
 }
 
 bool
@@ -244,7 +242,6 @@ PacketQueue::processSendEvent()
 {
     assert(!waitingOnRetry);
     sendDeferredPacket();
-    inform("return PacketQueue::processSendEvent"); // by shen
 }
 
 unsigned int

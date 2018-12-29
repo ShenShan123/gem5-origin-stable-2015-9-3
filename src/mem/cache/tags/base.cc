@@ -158,6 +158,12 @@ BaseTags::regStats()
         .desc("Number of data accesses")
         ;
 
+    unmatchedFaultyBlocks
+        .name(name() + ".unmatched_faulty_blocks")
+        .desc("Number of faulty blocks that cannot allocate data")
+        .flags(nozero | nonan)
+        ;
+
     registerDumpCallback(new BaseTagsDumpCallback(this));
     registerExitCallback(new BaseTagsCallback(this));
 }

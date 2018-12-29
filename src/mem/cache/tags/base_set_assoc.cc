@@ -55,7 +55,8 @@ using namespace std;
 
 // generate the fault map at the construction of a cache, by shen
 void BaseSetAssoc::generateFaultMap(uint32_t cap) {
-    unsigned seed = name() == "system.cpu.dcache" ? 1 : (name() == "system.cpu.icache" ? 2 : 3);
+    std::string cacheName(name());
+    unsigned seed = cacheName.find("l2") != cacheName.npos;
     std::default_random_engine e (seed);
     std::normal_distribution<double> norm(0.0,1.0);
 
@@ -147,7 +148,8 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
     }
     // added by shen
     // generate the fault map for a cache
-    if (name() == "system.cpu.dcache.tags" || name() == "system.cpu.icache.tags" || name() == "system.l2.tags") // pay attention the name()
+    std::string cacheName(name());
+    if (cacheName.find("l2") != cacheName.npos)
         generateFaultMap(p->size);
     // end
 }

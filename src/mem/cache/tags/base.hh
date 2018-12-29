@@ -147,6 +147,8 @@ class BaseTags : public ClockedObject
     /** Number of data blocks consulted over all accesses. */
     Stats::Scalar dataAccesses;
 
+    Stats::Scalar unmatchedFaultyBlocks;
+
     /**
      * @}
      */
@@ -225,8 +227,6 @@ class BaseTags : public ClockedObject
 
     virtual void forEachBlk(CacheBlkVisitor &visitor) = 0;
     // added by shen
-    //virtual void generateFaultMap(uint32_t cap) = 0;
-
     virtual void detectNullSubblocks(const uint8_t* data) {};
     // end
 };

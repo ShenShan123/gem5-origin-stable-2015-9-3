@@ -325,16 +325,10 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         return false;
     }
 
-    // by shen
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
     blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
-    
-    // added by shen
-    //if (/*name() == "system.cpu.dcache" || name() == "system.cpu.icache" ||*/ name() == "system.l2") {
-        //if (blk && !blk->faultyMatch) blk = NULL;//pkt->req->setFlags(Request::UNCACHEABLE);
-    //}// end
 
     DPRINTF(Cache, "%s%s addr %#llx size %d (%s) %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -379,7 +373,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         incHitCount(pkt);
         satisfyCpuSideRequest(pkt, blk);
         return true;
-    } //else if ((blk != NULL) && !blk->faultyMatch) blk->invalidate();
+    }
 
     // Can't satisfy access normally... either no block (blk == NULL)
     // or have block but need exclusive & only have shared.
@@ -777,7 +771,6 @@ PacketPtr
 Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
                     bool needsExclusive) const
 {
-    //if (blk && !blk->faultyMatch) return NULL; // by shen
     bool blkValid = blk && blk->isValid();
 
     if (cpu_pkt->req->isUncacheable()) {
@@ -1426,7 +1419,8 @@ CacheBlk*
 Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks, const uint8_t* pktData)
 {
     // added 
-    if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2") {
+    std::string cacheName(name());
+    if (cacheName.find("l2") != cacheName.npos) {
         assert(pktData != NULL);
         tags->detectNullSubblocks(pktData);
     }
@@ -1542,10 +1536,11 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         assert(pkt->getSize() == blkSize);
 
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
+        
         // added by shen
-        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2") {
-            countZeroBlocks(blk->data, blkSize); 
-        }
+        //std::string cacheName(name());
+        //if (cacheName.find("l2") != cacheName.npos)
+        //    countZeroBlocks(blk->data, blkSize); 
         // end
     }
 
@@ -1966,7 +1961,6 @@ Cache::getNextMSHR()
 PacketPtr
 Cache::getTimingPacket()
 {
-    inform("enter getTimingPacket: 1986"); // by shen
     MSHR *mshr = getNextMSHR();
 
     if (mshr == NULL) {

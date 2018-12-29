@@ -101,12 +101,8 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id) const
     for (int i = 0; i < assoc; ++i) {
         if (blks[i]->tag == tag && blks[i]->isValid() &&
             blks[i]->isSecure() == is_secure) {
-            //if (blks[i]->faultyMatch) { // added by shen
-                way_id = i;
-                return blks[i];
-            //}
-            //else
-             //   inform("addr %llx, match but faulty unmatched way_id: %d", tag, way_id);
+            way_id = i;
+            return blks[i];
         }
     }
 
