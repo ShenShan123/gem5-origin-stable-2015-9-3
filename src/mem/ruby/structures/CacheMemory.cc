@@ -39,7 +39,7 @@ using namespace std;
 
 // generate the fault map at the construction of a cache, by shen
 void CacheMemory::generateFaultMap(uint32_t cap) {
-    unsigned seed;
+    unsigned seed = 0;
     if (name() == "system.ruby.l2_cntrl0.L2cache") seed = 1;
     else if (name() == "system.ruby.l1_cntrl0.L1Dcache") seed = 2;
     else if (name() == "system.ruby.l1_cntrl0.L1Icache") seed = 3;
