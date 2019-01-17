@@ -348,7 +348,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     //sxj end
     //std::cout << "before accessBlockNew" << std::endl; 
-    std::cout << "calling the accessBlockNew by : " << name() << std::endl;
+    //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
     blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj
@@ -511,7 +511,7 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
     if (doFastWrites && (pkt->cmd == MemCmd::WriteReq) &&
         (pkt->getSize() == blkSize) && (pkt->getOffset(blkSize) == 0)) {
         pkt->cmd = MemCmd::WriteInvalidateReq;
-	std::cout << "promote WriteInvalidate successed, tag: " << pkt->getAddr() << std::endl;//sxj
+	//std::cout << "promote WriteInvalidate successed, tag: " << pkt->getAddr() << std::endl;//sxj
         DPRINTF(Cache, "packet promoted from Write to WriteInvalidate\n");
         assert(isTopLevel); // should only happen at L1 or I/O cache
     }
@@ -520,22 +520,6 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
-
-    //sxj
-    if (name() == "system.cpu.icache"){
-        std::cout << "enter the L1 i-cache" << std::endl;
-    }
-    else if (name() == "system.cpu.dcache"){
-        std::cout << "enter the L1 d-cache" << std::endl;
-    }
-    else if (name() == "system.l2"){
-        std::cout << "enter the L2 cache" << std::endl;
-    }
-    else if (name() == "system.l3"){
-        std::cout << "enter the L3 cache" << std::endl;
-    }
-    //sxj end
-
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
 //@todo Add back in MemDebug Calls
 //    MemDebug::cacheAccess(pkt);
@@ -558,8 +542,8 @@ Cache::recvTimingReq(PacketPtr pkt)
     }
 
     //sxj
-    std::cout << "promote failured, tag: " << pkt->getAddr() << " cmd: " << pkt->cmd.toString(); //sxj
-    std::cout << std::endl;
+    //std::cout << "promote failured, tag: " << pkt->getAddr() << " cmd: " << pkt->cmd.toString(); //sxj
+    //std::cout << std::endl;
     //sxj end
 
     promoteWholeLineWrites(pkt);
@@ -629,31 +613,6 @@ Cache::recvTimingReq(PacketPtr pkt)
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
         satisfied = access(pkt, blk, lat, writebacks);
-	//sxj
-	if(pkt->cmd == MemCmd::WriteReq){
-		if (satisfied){
-			std::cout << "write hit a ";
-			if (blk->isRobust)
-				std::cout << "Robust line" << std::endl;
-			else
-				std::cout << "non-Robust line" << std::endl;
-		}
-		else
-			std::cout << "write miss" << std::endl;
-	}
-        if(pkt->cmd == MemCmd::ReadReq){
-		if (satisfied){
-			std::cout << "read hit a ";
-			if (blk->isRobust) 
-				std::cout << "Robust line" << std::endl;
-			else
-				std::cout << "non-Robust line" << std::endl;
-		}
-		else
-			std::cout << "read miss" << std::endl;
-	}
-	//DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj	
-	//sxj end
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
         while (!writebacks.empty()) {
@@ -926,11 +885,6 @@ Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // only reason to be here is that blk is shared
         // (read-only) and we need exclusive
         assert(needsExclusive);
-	//sxj
-	std::cout << blk->print() << std::endl;
-	std::cout << tags->regenerateBlkAddr(blk->tag, blk->set) << std::endl;
-	std::cout << cpu_pkt->cmd.toString() << std::endl;
-	//sxj end
         assert(!blk->isWritable());
         cmd = cpu_pkt->isLLSC() ? MemCmd::SCUpgradeReq : MemCmd::UpgradeReq;
     } else if (cpu_pkt->cmd == MemCmd::SCUpgradeFailReq ||
@@ -1618,7 +1572,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
     }
 
     if (is_write && !blk->isRobust){
-	std::cout << "write miss with a non-Robust victim line" << std::endl;
+	    //std::cout << "write miss with a non-Robust victim line" << std::endl;
         CacheBlk *Rblk = tags->findVictimR(addr);
         if (Rblk->isValid()) {
             Addr round_addr = tags->regenerateBlkAddr(Rblk->tag, Rblk->set);
@@ -1643,7 +1597,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
                 }
             }
         }
-        std::cout << "doing a block rounding!!" << std::endl;
+        //std::cout << "doing a block rounding!!" << std::endl;
         tags->blockRound(blk, Rblk);
         rounds++;
         //actually copy Rblk's all info to blk
@@ -2098,7 +2052,7 @@ Cache::getNextMSHR()
         }
 
         // No conflicts; issue write
-	std::cout << "sending from write buffer" << std::endl;//sxj
+	//std::cout << "sending from write buffer" << std::endl;//sxj
         return write_mshr;
     } else if (miss_mshr) {
         // need to check for conflicting earlier writeback
@@ -2158,20 +2112,6 @@ Cache::getNextMSHR()
 PacketPtr
 Cache::getTimingPacket()
 {
-    //sxj
-    if (name() == "system.cpu.icache"){
-        std::cout << "get pkt from L1 i-cache" << std::endl;
-    }
-    else if (name() == "system.cpu.dcache"){
-        std::cout << "get pkt from L1 d-cache" << std::endl;
-    }
-    else if (name() == "system.l2"){
-        std::cout << "get pkt from L2 cache" << std::endl;
-    }
-    else if (name() == "system.l3"){
-        std::cout << "get pkt from L3 cache" << std::endl;
-    }
-    //sxj end
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     MSHR *mshr = getNextMSHR();                                                 //从MSHR或者write buffer中选择一个服务对象
                                                                                 //看来结构体是共通的
@@ -2266,7 +2206,6 @@ Cache::getTimingPacket()
 
     assert(pkt != NULL);
     pkt->senderState = mshr;
-    std::cout << "ready to send a request, tag: " << pkt->getAddr() << std::endl;
     return pkt;
 }
 

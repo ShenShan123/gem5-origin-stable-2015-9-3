@@ -277,7 +277,6 @@ class MSHR : public Packet::SenderState, public Printable
         if (getNumTargets() != 1)
             return false;
         const Target *tgt = &targets.front();
-	std::cout << "isForwardNoResponse: mshr entry对应的pkt: " << tgt->pkt->print() << std::endl;//sxj
         return tgt->source == Target::FromCPU && !tgt->pkt->needsResponse();
     }
 
