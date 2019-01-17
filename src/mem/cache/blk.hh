@@ -123,7 +123,7 @@ class CacheBlk
     bool isFault;
 
     /** whether this block is disabled*/
-    bool isDisabled;
+    bool isError;
 
     /** the number of zeros*/
     int zeros; 
@@ -182,7 +182,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), isFault(false), isDisabled(false), refCount(0),    //sxj
+          set(-1), isTouched(false), isFault(false), isError(false), zeros(0), refCount(0),    //sxj
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

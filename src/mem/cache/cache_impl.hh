@@ -64,8 +64,6 @@
 #include "mem/cache/cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
-//sxj
-#include "math.h"
 
 Cache::Cache(const Params *p)
     : BaseCache(p),
@@ -174,7 +172,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
             //sxj
             uint8_t tempdata = *(blk->data);
             int zeros = 0;
-            while (tempdata+1){
+            while (tempdata+1 < 255){
                 zeros++;
                 tempdata |= tempdata + 1;
             }
@@ -196,35 +194,43 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         pkt->setDataFromBlock(blk->data, blkSize);
 
         //sxj
-        //这里进行纠错
-        int zerosData = 0, zerosZeros = 0;
-        uint8_t tempdata = *(blk->data);
-        uint8_t tempzeros = blk->zeros;
-        while (tempdata+1){
+        //access内会进入这里。在这里进行纠错
+        int zerosData = 0, zerosZeros = 0;//分别是数据中的0个数与零计数中的0个数
+        uint8_t tempdata = *(blk->data);//blk内的数据
+        uint8_t tempzeros = blk->zeros;//blk内用于存0的个数的变量
+        while (tempdata+1 < 255){
             zerosData++;
             tempdata |= tempdata + 1;
         }
-        while (tempzeros+1){
+        while (tempzeros+1 < 255){
             zerosZeros++;
             tempzeros |= tempzeros + 1;
         }
         int zerosAll = zerosData + zerosZeros;
+        bool errorHappened = false;
+        int bitError = 0;
+        for (int ii = 0; ii < zerosAll; ii++){
+            bitError = rand()%1000;
+            if (bitError == 1){
+                errorHappened = true;
+            }
+            if (errorHappened)
+                break;
+        }
 
-        float singleFaultRate = 0.999;
-        int faultRate = pow(singleFaultRate, zerosAll)*1000;
-        if(rand()%1000 > faultRate){//发生错误
+        if(errorHappened && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){//发生错误
             faultReads++;
             blk->isFault = true;//设置错误标志
-            blk->isDisabled = true;
+            blk->isError = true;
+            //找一个未设置isFault的，互换标志即可
+            CacheBlk *NFblk = tags->findNonFault(pkt->getAddr());
+            if(NFblk){
+                faultRemaps++;
+                blk->isFault = false;
+                NFblk->isFault = true;
+            }
         }
 
-        //找一个未设置isFault的，互换标志即可
-        CacheBlk *NFblk = tags->findNonFault(pkt->getAddr());
-        if(NFblk){
-            faultRemaps++;
-            blk->isFault = false;
-            NFblk->isFault = true;
-        }
         //sxj end
 
         if (pkt->getSize() == blkSize) {
@@ -413,7 +419,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         //sxj
         uint8_t tempdata = *(blk->data);
         int zeros = 0;
-        while (tempdata+1){
+        while (tempdata+1 < 255){
             zeros++;
             tempdata |= tempdata + 1;
         }
@@ -428,7 +434,11 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                                       : blk->isReadable())) {
         // OK to satisfy access
         incHitCount(pkt);
-        satisfyCpuSideRequest(pkt, blk);
+        satisfyCpuSideRequest(pkt, blk);//access函数中的satisfyCpuSideRequest
+        if (blk && blk->isError && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){
+            ++++lat;
+            blk->isError = false;
+        }
         return true;
     }
 
@@ -1236,17 +1246,17 @@ Cache::recvTimingResp(PacketPtr pkt)
                 satisfyCpuSideRequest(tgt_pkt, blk,
                                       true, mshr->hasPostDowngrade());
 
-                //sxj
-                if (blk->isDisabled && pkt->isRead()){
-                    if (name() == "system.cpu.icache" || name() == "system.cpu.dcache"){
-                        completion_time += 1500;
-                    }
-                    else if (name() == "system.l2" || name() == "system.l3"){
-                        completion_time += 3000;
-                    }
-                    blk->isDisabled = false;
-                }
-                //sxj end
+                // //sxj
+                // if (blk->isError && pkt->isRead()){
+                //     if (name() == "system.cpu.icache" || name() == "system.cpu.dcache"){
+                //         completion_time += 1500;
+                //     }
+                //     else if (name() == "system.l2" || name() == "system.l3"){
+                //         completion_time += 3000;
+                //     }
+                //     blk->isError = false;
+                // }
+                // //sxj end
 
                 // How many bytes past the first request is this one
                 int transfer_offset =
@@ -1600,7 +1610,7 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         //sxj
         uint8_t tempdata = *(blk->data);
         int zeros = 0;
-        while (tempdata+1){
+        while (tempdata+1 < 255){
             zeros++;
             tempdata |= tempdata + 1;
         }
