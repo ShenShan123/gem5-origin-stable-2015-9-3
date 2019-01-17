@@ -352,37 +352,38 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj
-    if (pkt->isRead())
-	if (blk)
-	    if (blk->isRobust){
-		std::cout << "read hit a Robust line, first" << std::endl;
-        robustReadHits++;
+    if (pkt->isRead()){
+    	if (blk){
+    	    if (blk->isRobust){
+        		//std::cout << "read hit a Robust line, first" << std::endl;
+                robustReadHits++;
+            }else{
+        		//std::cout << "read hit a non-Robust line, first" << std::endl;
+                nonRobustReadHits++;
+            }
         }
-	    else{
-		std::cout << "read hit a non-Robust line, first" << std::endl;
-        nonRobustReadHits++;
-        }
-	else
-		std::cout << "read miss, first" << std::endl;
+    }
+	//else
+		//std::cout << "read miss, first" << std::endl;
     else if (pkt->isWrite()){
-	if (blk)
-	    if (blk->isRobust){
-		std::cout << "write hit a Robust line, first" << std::endl;
-        robustWriteHits++;
+    	if (blk){
+    	    if (blk->isRobust){
+        		//std::cout << "write hit a Robust line, first" << std::endl;
+                robustWriteHits++;
+            }else{
+        		//std::cout << "write hit a non-Robust line, first" << std::endl;
+                nonRobustWriteHits++;
+            }
+    	//else
+    		//std::cout << "write miss, first" << std::endl;
         }
-	    else{
-		std::cout << "write hit a non-Robust line, first" << std::endl;
-        nonRobustWriteHits++;
-        }
-	else
-		std::cout << "write miss, first" << std::endl;
     }
     
     if (pkt->isWrite() && blk && !blk->isRobust){
-	std::cout << "doing a block swap!!!" << std::endl;
-	//std::cout << "blk: " << blk->print() << std::endl;
+    	//std::cout << "doing a block swap!!!" << std::endl;
+    	//std::cout << "blk: " << blk->print() << std::endl;
         CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
-	//if (Rblk)
+	    //if (Rblk)
 		//std::cout << "Rblk: " << Rblk->print() << std::endl;
         if (Rblk->isDirty()) {
         // Save writeback packet for handling by caller
@@ -390,9 +391,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         }
         tags->blockSwap(blk, Rblk, lat, writebacks);
         if (isTopLevel)
-            ++++++lat;//******************************这里应该区分l1和l2、l3
+            ++++lat;//******************************这里应该区分l1和l2、l3
         else
-            ++++++++++++lat;
+            ++++lat;
 	blk = Rblk;
     swaps++;
     }

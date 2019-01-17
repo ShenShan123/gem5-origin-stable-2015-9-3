@@ -123,6 +123,11 @@ class CacheBlk
     bool isRobust;
 
     //sxj
+    /** whether this non-Robust block encounter an error*/
+    bool isSingleError;
+    bool isMultiError; 
+
+    //sxj
     /** whether this block is disabled cause by encounter a multi bits error*/
     bool isDisabled;
     bool isMissed;
@@ -181,7 +186,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), isRobust(false), isDisabled(false), isMissed(false), refCount(0),
+          set(-1), isTouched(false), isRobust(false), isSingleError(false), isMultiError(false), isDisabled(false), isMissed(false), refCount(0),
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

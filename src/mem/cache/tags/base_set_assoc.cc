@@ -105,13 +105,34 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             blk->tag = j;
             blk->whenReady = 0;
             blk->isTouched = false;
+            blk->isSingleError = false;
+            blk->isMultiError = false;
+
             //sxj
             /** only the first two Blocks of a cache set are seen as a Robust one. */
             if (j <= 1)
                 blk->isRobust = true;
             else
                 blk->isRobust = false;
+            if (!blk->isRobust){//仅对于non-Robust的对象存在error的情况
+                int errorRate = 0;
+                int errorNumber = 0;
+                for (int ii = 0; ii < 512; ii++){
+                    errorRate = rand()%1000;
+                    if (errorRate == 1)
+                        errorNumber++;
+                    if (errorNumber > 1)
+                        break;
+                }
+                if (errorNumber == 1){
+                    blk->isSingleError = true;
+                }
+                else if (errorNumber > 1){
+                    blk->isMultiError = true;
+                }
+            }
             //sxj end
+
             blk->size = blkSize;
             sets[i].blks[j]=blk;
             blk->set = i;

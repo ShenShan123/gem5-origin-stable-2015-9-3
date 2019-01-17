@@ -191,41 +191,27 @@ public:
         //sxj
         assert (cacheLevel != 0);
         if (blk && !blk->isRobust){
-	    std::cout << "judging weather there have a error:" << std::endl;
-            int singleProb = rand()%1000;
-            if (singleProb == 1){
-		singleError++;
-		//blk->invalidate();
-                //blk = NULL;
-                int multiProb = rand()%1000;
-                if (cacheLevel == 3 || cacheLevel == 4)
-                    if (multiProb == 1){
-		        multiError++;
-                        blk->isDisabled = true;
-                        std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
-                    }
-                    else{
-                        std::cout << "a single bit error happened in a non-Robust block within L23" << std::endl;
-                    }
-                else
-                    std::cout << "a single bit error happened in a non-Robust block within L1" << std::endl;
-
-                //invalidate(blk);      //XXXXXX
-
-                //blk->status = 0;      //将block初始化
-                //blk = NULL;             //返回NULL，说明miss，只要有1-bit error发生，就视为miss
+            if (cacheLevel == 3 || cacheLevel == 4){
+                if (blk->isMultiError){
+                    blk->isDisabled = true;//只有L2无法进行多错纠正，L1可以
+                    blk = NULL;//由于发生了一个以上的错误，视为miss，该blk禁用
+                    //std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
+                }
             }
-	    else
-                std::cout << "no error" << std::endl;
         }
         //sxj end
 
-	//sxj
-	//std::cout << "tag of pkt: " << tag << std::endl;
-	//if (blk)
-	//	std::cout << "tag of blk: " << blk->tag << std::endl;
-	//sxj end
-        lat = accessLatency;;
+        lat = accessLatency;
+
+        if (cacheLevel == 1 || cacheLevel == 2){
+            if (blk && (blk->isSingleError || blk->isMultiError))
+                ++++lat;
+        }
+        if (cacheLevel == 3 || cacheLevel == 4){
+            if (blk && blk->isSingleError)
+                ++lat;
+        }
+        //sxj end
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on
@@ -242,7 +228,7 @@ public:
         if (blk != NULL) {
             if (blk->whenReady > curTick()
                 && cache->ticksToCycles(blk->whenReady - curTick())
-                > accessLatency) {
+                > lat) {
                 lat = cache->ticksToCycles(blk->whenReady - curTick());
             }
             blk->refCount += 1;
