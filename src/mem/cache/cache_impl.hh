@@ -827,7 +827,7 @@ Cache::recvTimingReq(PacketPtr pkt)
                 // We take also into account the additional delay of the xbar.
 		//DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
                 allocateMissBuffer(pkt, forward_time, true);                        //未命中mshr，且非上面if的就分配到mshr中
-		std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
+		//std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
             }
 
             if (prefetcher) {
@@ -1570,7 +1570,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
             }
         }
     }
-
+    //sxj
     if (is_write && !blk->isRobust){
 	    //std::cout << "write miss with a non-Robust victim line" << std::endl;
         CacheBlk *Rblk = tags->findVictimR(addr);
@@ -1598,10 +1598,10 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
             }
         }
         //std::cout << "doing a block rounding!!" << std::endl;
-        tags->blockRound(blk, Rblk);
+        tags->blockRound(blk, Rblk);//这里只对标志位进行更换
         rounds++;
         //actually copy Rblk's all info to blk
-        blk = Rblk;
+        //blk = Rblk;//既然只更换标志位，那就没有必要再换成Rblk了
         //after round, Rblk should be the cell going to be restore.
     }
 

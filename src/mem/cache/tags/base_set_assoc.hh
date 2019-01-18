@@ -320,25 +320,16 @@ public:
      * @param blk2 The LRU Robust cell.
      */
     void blockRound(CacheBlk *blk1, CacheBlk *blk2){         
-        if (!blk1->isTouched) {
-            tagsInUse++;
-            blk1->isTouched = true;
-            if (!warmedUp && tagsInUse.value() >= warmupBound) {
-                warmedUp = true;
-                warmupCycle = curTick();
-            }
-        }
-
-        if (blk1->isValid()) {
-            replacements[0]++;
-            totalRefs += blk1->refCount;
-            ++sampledRefs;
-            occupancies[blk1->srcMasterId]--;
-        }
-        blk1->isTouched = true;
-        *blk1 = *blk2;
-        blk1->srcMasterId = blk2->srcMasterId;
-        blk1->tickInserted = blk2->tickInserted;
+        bool tempRobust, tempSingleError, tempMultiError;
+        tempRobust = blk1->isRobust;
+        blk1->isRobust = blk2->isRobust;
+        blk2->isRobust = tempRobust;
+        tempSingleError = blk1->isSingleError;
+        blk1->isSingleError = blk2->isSingleError;
+        blk2->isSingleError = tempSingleError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
         //保留LRU优先级
         tagAccesses += 1;
         dataAccesses += 1;
@@ -350,31 +341,22 @@ public:
      * @param blk2 The LRU Robust cell.
      */
     void blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks){
-        if (blk2 != NULL) {
-            if (blk2->whenReady > curTick()
-                && blk2->whenReady > blk1->whenReady
-                && cache->ticksToCycles(blk2->whenReady - curTick())
-                > accessLatency) {
-                lat = cache->ticksToCycles(blk2->whenReady - curTick());
-            }
-            blk2->refCount += 1;
-        }
         // if (blk2->isDirty()) {
         //         // Save writeback packet for handling by caller
         //     writebacks.push_back(writebackBlk(blk2));
         // }
     //start the swap
-        CacheBlk *tempBlk = new CacheBlk;
-        *tempBlk = *blk1;
-        tempBlk->srcMasterId = blk1->srcMasterId;
-        tempBlk->tickInserted = blk1->tickInserted;
-        *blk1 = *blk2;
-        blk1->srcMasterId = blk2->srcMasterId;
-        blk1->tickInserted = blk2->tickInserted;
-        *blk2 = *tempBlk;
-        blk2->srcMasterId = tempBlk->srcMasterId;
-        blk2->tickInserted = tempBlk->tickInserted;
-        delete tempBlk;
+        //实际上这里只要换isRobust、isSingleError、isMultiError（3个bool）就行了
+        bool tempRobust, tempSingleError, tempMultiError;
+        tempRobust = blk1->isRobust;
+        blk1->isRobust = blk2->isRobust;
+        blk2->isRobust = tempRobust;
+        tempSingleError = blk1->isSingleError;
+        blk1->isSingleError = blk2->isSingleError;
+        blk2->isSingleError = tempSingleError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
     }
     //sxj end
 
