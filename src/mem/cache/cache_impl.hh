@@ -385,17 +385,17 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
 	    //if (Rblk)
 		//std::cout << "Rblk: " << Rblk->print() << std::endl;
-        if (Rblk->isDirty()) {
-        // Save writeback packet for handling by caller
-            writebacks.push_back(writebackBlk(Rblk));
-        }
+        // if (Rblk->isDirty()) {
+        // // Save writeback packet for handling by caller
+        //     writebacks.push_back(writebackBlk(Rblk));
+        // }//又去掉了一个写回
         tags->blockSwap(blk, Rblk, lat, writebacks);
         if (isTopLevel)
             ++++lat;//******************************这里应该区分l1和l2、l3
         else
             ++++lat;
-	blk = Rblk;
-    swaps++;
+    	blk = Rblk;
+        swaps++;
     }
     //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj end
@@ -825,9 +825,9 @@ Cache::recvTimingReq(PacketPtr pkt)
                 // schedule an event to the queued port, when a cacheable miss
                 // is forwarded to MSHR queue.
                 // We take also into account the additional delay of the xbar.
-		//DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+		        //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
                 allocateMissBuffer(pkt, forward_time, true);                        //未命中mshr，且非上面if的就分配到mshr中
-		//std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
+		        //std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
             }
 
             if (prefetcher) {
@@ -2113,8 +2113,7 @@ Cache::getTimingPacket()
 
     if (mshr->isForwardNoResponse()) {                                          //从CPU发出且不需要response
         // no response expected, just forward packet as it is
-	
-	//sxj 本版本没有clean write的更新，只能将这里注释掉了
+	    //sxj 本版本没有clean write的更新，只能将这里注释掉了
         //assert(tags->findBlock(mshr->blkAddr, mshr->isSecure) == NULL);         //确保准备发出的对象在cache内找不到
         pkt = tgt_pkt;
     } else {

@@ -203,6 +203,7 @@ public:
 
         lat = accessLatency;
 
+        //sxj
         if (cacheLevel == 1 || cacheLevel == 2){
             if (blk && (blk->isSingleError || blk->isMultiError))
                 ++++lat;
@@ -263,7 +264,7 @@ public:
         for (int i = 0; i < assoc; ++i) {
             if (!sets[set].blks[i]->isDisabled) {   //sxj
                 blk = sets[set].blks[i];
-                if (!blk->isValid() || blk->isMissed) {
+                if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj
                     break;
                 }
@@ -282,12 +283,11 @@ public:
         for (int i = 0; i < assoc; ++i) {
             if (!sets[set].blks[i]->isDisabled && sets[set].blks[i]->isRobust) {
                 blk = sets[set].blks[i];
-                if (!blk->isValid() || blk->isMissed) {
+                if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj
                     break;
                 }
             }
-
         }
 
         return blk;
@@ -302,7 +302,7 @@ public:
         for (int i = 0; i < assoc; ++i) {
             if (!sets[set].blks[i]->isDisabled && !sets[set].blks[i]->isRobust) {
                 blk = sets[set].blks[i];
-                if (!blk->isValid() || blk->isMissed) {
+                if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj
                     break;
                 }
