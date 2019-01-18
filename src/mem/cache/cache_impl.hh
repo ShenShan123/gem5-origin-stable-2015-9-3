@@ -1547,6 +1547,16 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
     else
         blk = tags->findVictim(addr);
 
+    //sxj
+    if (is_write && !blk->isRobust){
+        //std::cout << "write miss with a non-Robust victim line" << std::endl;
+        CacheBlk *Rblk = tags->findVictimR(addr);
+        //std::cout << "doing a block rounding!!" << std::endl;
+        tags->blockRound(blk, Rblk);//这里只对标志位进行更换
+        rounds++;
+    }//这种情况（write miss non-Robust）除了进行了标志位的互换，其他的均未进行（选择的Robust对象的写回）
+    //sxj end
+
     if (blk->isValid() && !blk->isMissed) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
         MSHR *repl_mshr = mshrQueue.findMatch(repl_addr, blk->isSecure());
@@ -1570,40 +1580,10 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
             }
         }
     }
-    //sxj
-    if (is_write && !blk->isRobust){
-	    //std::cout << "write miss with a non-Robust victim line" << std::endl;
-        CacheBlk *Rblk = tags->findVictimR(addr);
-        if (Rblk->isValid()) {
-            Addr round_addr = tags->regenerateBlkAddr(Rblk->tag, Rblk->set);
-            MSHR *round_mshr = mshrQueue.findMatch(round_addr, Rblk->isSecure());
-            if (round_mshr) {
-                // must be an outstanding upgrade request
-                // on a block we're about to round...
-                assert(!Rblk->isWritable() || Rblk->isDirty());
-                assert(round_mshr->needsExclusive());
-                // too hard to round block with transient state
-                // allocation failed, block not inserted
-                return NULL;
-            } else {
-                DPRINTF(Cache, "roundment: rounding %#llx (%s) with %#llx (%s): %s\n",
-                        round_addr, Rblk->isSecure() ? "s" : "ns",
-                        addr, is_secure ? "s" : "ns",
-                        Rblk->isDirty() ? "writeback" : "clean");
-
-                if (Rblk->isDirty()) {
-                    // Save writeback packet for handling by caller
-                    writebacks.push_back(writebackBlk(Rblk));
-                }
-            }
-        }
-        //std::cout << "doing a block rounding!!" << std::endl;
-        tags->blockRound(blk, Rblk);//这里只对标志位进行更换
-        rounds++;
+    
         //actually copy Rblk's all info to blk
         //blk = Rblk;//既然只更换标志位，那就没有必要再换成Rblk了
         //after round, Rblk should be the cell going to be restore.
-    }
 
     return blk;
 }
