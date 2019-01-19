@@ -176,7 +176,34 @@ public:
     //用于匹配统一接口
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
                                  int context_src){
-        return NULL;
+        Addr tag = extractTag(addr);
+        int set = extractSet(addr);
+
+        BlkType *blk = sets[set].findBlk(tag, is_secure);
+        lat = accessLatency;
+
+        // Access all tags in parallel, hence one in each way.  The data side
+        // either accesses all blocks in parallel, or one block sequentially on
+        // a hit.  Sequential access with a miss doesn't access data.
+        tagAccesses += assoc;
+        if (sequentialAccess) {
+            if (blk != NULL) {
+                dataAccesses += 1;
+            }
+        } else {
+            dataAccesses += assoc;
+        }
+
+        if (blk != NULL) {
+            if (blk->whenReady > curTick()
+                && cache->ticksToCycles(blk->whenReady - curTick())
+                > accessLatency) {
+                lat = cache->ticksToCycles(blk->whenReady - curTick());
+            }
+            blk->refCount += 1;
+        }
+
+        return blk;
     }
     //sxj end
 
