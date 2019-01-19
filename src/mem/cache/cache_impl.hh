@@ -346,8 +346,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     //std::cout << "before accessBlockNew" << std::endl; 
     //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
     printf("doing accessBlock\n");
-    blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
-    //blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
+    //blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
+    blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
     printf("done accessBlock\n");
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj

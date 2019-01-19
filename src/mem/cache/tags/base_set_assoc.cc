@@ -107,6 +107,7 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             blk->isTouched = false;
             blk->isSingleError = false;
             blk->isMultiError = false;
+            blk->isDisabled = false;
 
             //sxj
             /** only the first two Blocks of a cache set are seen as a Robust one. */
@@ -131,6 +132,10 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
                     blk->isMultiError = true;
                 }
             }
+            if (name() == "system.l2.tags" && blk->isMultiError){
+                blk->isDisabled = true;
+            }
+
             //sxj end
 
             blk->size = blkSize;

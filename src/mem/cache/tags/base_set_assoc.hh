@@ -189,16 +189,16 @@ public:
         BlkType *blk = sets[set].findBlk(tag, is_secure);
 
         //sxj
-        assert (cacheLevel != 0);
-        if (blk && !blk->isRobust){
-            if (cacheLevel == 3 || cacheLevel == 4){
-                if (blk->isMultiError){
-                    blk->isDisabled = true;//只有L2无法进行多错纠正，L1可以
-                    blk = NULL;//由于发生了一个以上的错误，视为miss，该blk禁用
-                    //std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
-                }
-            }
-        }
+        // assert (cacheLevel != 0);
+        // if (blk && !blk->isRobust){
+        //     if (cacheLevel == 3 || cacheLevel == 4){
+        //         if (blk->isMultiError){
+        //             blk->isDisabled = true;//只有L2无法进行多错纠正，L1可以
+        //             blk = NULL;//由于发生了一个以上的错误，视为miss，该blk禁用
+        //             //std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
+        //         }
+        //     }
+        // }
         //sxj end
 
         lat = accessLatency;
@@ -354,6 +354,9 @@ public:
         tempSingleError = blk1->isSingleError;
         blk1->isSingleError = blk2->isSingleError;
         blk2->isSingleError = tempSingleError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
         tempMultiError = blk1->isMultiError;
         blk1->isMultiError = blk2->isMultiError;
         blk2->isMultiError = tempMultiError;
