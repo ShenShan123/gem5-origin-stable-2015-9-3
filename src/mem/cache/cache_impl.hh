@@ -329,8 +329,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // that can modify its value.
 
     //sxj
-    int cacheLevel = 0;
-    /*
+    /*int cacheLevel = 0;
     if (name() == "system.cpu.icache"){
         cacheLevel = 1;
     }
