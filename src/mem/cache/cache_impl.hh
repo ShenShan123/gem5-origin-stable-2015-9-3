@@ -346,8 +346,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     //std::cout << "before accessBlockNew" << std::endl; 
     //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
     printf("doing accessBlock\n");
-    blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
-    //blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
+    //blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
+    blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
     printf("done accessBlock\n");
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj
@@ -390,13 +390,12 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         //     writebacks.push_back(writebackBlk(Rblk));
         // }//又去掉了一个写回
         printf("doing blockSwap\n");
-        tags->blockSwap(blk, Rblk, lat, writebacks);
+        //tags->blockSwap(blk, Rblk, lat, writebacks);
         printf("done blockSwap\n");
         if (isTopLevel)
             ++++lat;//******************************这里应该区分l1和l2、l3
         else
             ++++lat;
-    	blk = Rblk;
         swaps++;
     }
     //sxj end
@@ -1545,13 +1544,14 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
         blk = tags->findVictim(addr);
 
     //sxj
+    /*
     if (is_write && !blk->isRobust){
         //std::cout << "write miss with a non-Robust victim line" << std::endl;
         CacheBlk *Rblk = tags->findVictimR(addr);
         //std::cout << "doing a block rounding!!" << std::endl;
         tags->blockRound(blk, Rblk);//这里只对标志位进行更换
         rounds++;
-    }//这种情况（write miss non-Robust）除了进行了标志位的互换，其他的均未进行（选择的Robust对象的写回）
+    }*///这种情况（write miss non-Robust）除了进行了标志位的互换，其他的均未进行（选择的Robust对象的写回）
     //sxj end
 
     if (blk->isValid() && !blk->isMissed) {
