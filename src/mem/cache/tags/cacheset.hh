@@ -100,7 +100,8 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id) const
     way_id = assoc;
     for (int i = 0; i < assoc; ++i) {
         if (blks[i]->tag == tag && blks[i]->isValid() &&
-            blks[i]->isSecure() == is_secure && !blks[i]->isDisabled) { //sxj isDisabled
+            //blks[i]->isSecure() == is_secure && !blks[i]->isDisabled) { //sxj isDisabled
+            blks[i]->isSecure() == is_secure) { //sxj isDisabled
             way_id = i;
             return blks[i];
         }
