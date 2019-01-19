@@ -382,7 +382,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (pkt->isWrite() && blk && !blk->isRobust){
     	//std::cout << "doing a block swap!!!" << std::endl;
     	//std::cout << "blk: " << blk->print() << std::endl;
-        CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
+
+        //CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
+
 	    //if (Rblk)
 		//std::cout << "Rblk: " << Rblk->print() << std::endl;
         // if (Rblk->isDirty()) {
