@@ -262,13 +262,13 @@ public:
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            //if (!sets[set].blks[i]->isDisabled) {   //sxj
+            if (!sets[set].blks[i]->isDisabled) {   //sxj
                 blk = sets[set].blks[i];
                 if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj
                     break;
                 }
-            //}
+            }
         }
 
         return blk;
@@ -281,8 +281,8 @@ public:
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            //if (!sets[set].blks[i]->isDisabled && sets[set].blks[i]->isRobust) {
-            if (sets[set].blks[i]->isRobust) {
+            if (!sets[set].blks[i]->isDisabled && sets[set].blks[i]->isRobust) {
+            //if (sets[set].blks[i]->isRobust) {
                 blk = sets[set].blks[i];
                 if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj
@@ -301,8 +301,8 @@ public:
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            //if (!sets[set].blks[i]->isDisabled && !sets[set].blks[i]->isRobust) {
-            if (!sets[set].blks[i]->isRobust) {
+            if (!sets[set].blks[i]->isDisabled && !sets[set].blks[i]->isRobust) {
+            //if (!sets[set].blks[i]->isRobust) {
                 blk = sets[set].blks[i];
                 if (!blk->isValid()) {
                     //blk->isMissed = false;  //sxj

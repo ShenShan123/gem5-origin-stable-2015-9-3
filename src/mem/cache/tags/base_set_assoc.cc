@@ -132,9 +132,10 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
                     blk->isMultiError = true;
                 }
             }
-            if (name() == "system.l2.tags" && blk->isMultiError){
-                blk->isDisabled = true;
-            }
+            
+            // if (name() == "system.l2.tags" && blk->isMultiError){
+            //     blk->isDisabled = true;
+            // }
 
             //sxj end
 
