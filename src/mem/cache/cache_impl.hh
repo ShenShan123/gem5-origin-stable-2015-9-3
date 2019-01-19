@@ -520,9 +520,10 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
+    printf("doing recvTimingReq\n");//sxj
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
-//@todo Add back in MemDebug Calls
-//    MemDebug::cacheAccess(pkt);
+    //@todo Add back in MemDebug Calls
+    //    MemDebug::cacheAccess(pkt);
 
 
     /// @todo temporary hack to deal with memory corruption issue until
@@ -538,6 +539,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         // @todo This should really enqueue the packet rather
         bool M5_VAR_USED success = memSidePort->sendTimingReq(pkt);
         assert(success);
+        printf("done recvTimingReq\n");
         return true;
     }
 
@@ -590,6 +592,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         // caches along the path to memory are allowed to keep lines
         // in a shared state, and a cache above us already committed
         // to responding
+        printf("done recvTimingReq\n");
         return true;
     }
 
@@ -836,6 +839,7 @@ Cache::recvTimingReq(PacketPtr pkt)
     if (next_pf_time != MaxTick)
         requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),           //通知MemSide端口准备发送
                                                 next_pf_time));
+    printf("done recvTimingReq\n");
     return true;                                                                    //到现在为止，作为一个write miss，现在进入了MSHR
 }
 
@@ -1142,6 +1146,7 @@ Cache::functionalAccess(PacketPtr pkt, bool fromCpuSide)
 void
 Cache::recvTimingResp(PacketPtr pkt)
 {
+    printf("doing recvTimingResp\n");//sxj
     assert(pkt->isResponse());
 
     MSHR *mshr = dynamic_cast<MSHR*>(pkt->senderState);                     //这里相当于假定在mshr一定有接收到的这个pkt对应的entry
@@ -1401,6 +1406,7 @@ Cache::recvTimingResp(PacketPtr pkt)
     DPRINTF(Cache, "Leaving %s with %s for addr %#llx\n", __func__,
             pkt->cmdString(), pkt->getAddr());
     delete pkt;
+    printf("done recvTimingResp\n");//sxj
 }
 
 PacketPtr
@@ -1609,7 +1615,9 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         bool isRead = pkt->isRead();
         bool isWrite = pkt->isWriteInvalidate()||pkt->cmd == MemCmd::WriteReq;
         // need to do a replacement
+        printf("doing allocateBlock\n");
         blk = allocateBlock(addr, is_secure, isRead, isWrite, writebacks);                           //利用findVictim进行eviction
+        printf("done allocateBlock\n");
         if (blk == NULL) {                                                              //如果replace失败
             // No replaceable block... just use temporary storage to
             // complete the current request and then get rid of it
