@@ -136,7 +136,7 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             if (name() == "system.l2.tags" && blk->isMultiError){
                 blk->isDisabled = true;
             }
-            blk->isDisabled = false;
+            //blk->isDisabled = false;
             //sxj end
 
             blk->size = blkSize;

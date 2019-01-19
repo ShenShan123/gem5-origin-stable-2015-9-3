@@ -1504,6 +1504,12 @@ Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
 {
     CacheBlk *blk = tags->findVictim(addr);
 
+    //sxj
+    if (blk == NULL){
+        return NULL;
+    }
+    //sxj end
+
     if (blk->isValid()) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
         MSHR *repl_mshr = mshrQueue.findMatch(repl_addr, blk->isSecure());
@@ -1544,6 +1550,12 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
     //findVictimNR is a new function
     else
         blk = tags->findVictim(addr);
+
+    //sxj
+    if (blk == NULL){//只有findVictimNR会返回NULL
+        return NULL;
+    }
+    //sxj end
 
     //sxj
     /*
