@@ -329,7 +329,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // that can modify its value.
 
     //sxj
-    /*int cacheLevel = 0;
+    int cacheLevel = 0;
     if (name() == "system.cpu.icache"){
         cacheLevel = 1;
     }
@@ -341,7 +341,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     }
     else if (name() == "system.l3"){
         cacheLevel = 4;
-    }*/
+    }
     //sxj end
     //std::cout << "before accessBlockNew" << std::endl; 
     //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
