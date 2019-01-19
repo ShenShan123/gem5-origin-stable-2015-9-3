@@ -296,7 +296,6 @@ bool
 Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
               PacketList &writebacks)
 {
-    //std::cout << "into the access" << std::endl;//sxj
     // sanity check
     assert(pkt->isRequest());
 
@@ -328,7 +327,6 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
-    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
 
     //sxj
     int cacheLevel = 0;
@@ -344,12 +342,12 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     else if (name() == "system.l3"){
         cacheLevel = 4;
     }
-    
-
     //sxj end
     //std::cout << "before accessBlockNew" << std::endl; 
     //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
+    printf("doing accessBlockNew\n");
     blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
+    printf("done accessBlockNew\n");
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj
     if (pkt->isRead()){
@@ -378,7 +376,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     		//std::cout << "write miss, first" << std::endl;
         }
     }
-    
+
+    //sxj
     if (pkt->isWrite() && blk && !blk->isRobust){
     	//std::cout << "doing a block swap!!!" << std::endl;
     	//std::cout << "blk: " << blk->print() << std::endl;
@@ -389,7 +388,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // // Save writeback packet for handling by caller
         //     writebacks.push_back(writebackBlk(Rblk));
         // }//又去掉了一个写回
+        printf("doing blockSwap\n");
         tags->blockSwap(blk, Rblk, lat, writebacks);
+        printf("done blockSwap\n");
         if (isTopLevel)
             ++++lat;//******************************这里应该区分l1和l2、l3
         else
@@ -397,7 +398,6 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     	blk = Rblk;
         swaps++;
     }
-    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj end
 
     DPRINTF(Cache, "%s%s addr %#llx size %d (%s) %s\n", pkt->cmdString(),
@@ -411,8 +411,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         assert(blkSize == pkt->getSize());
         if (blk == NULL) {                                                          //如果写回没有命中本级cache
             // need to do a replacement
+            printf("doing allocate\n");
             blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), 0, true, writebacks);       //上一级发出的写回，本级cache尝试将其allocate
-                                                                                    //这里的第三个参数为write back
+            printf("done allocate\n");                                                                        //这里的第三个参数为write back
             if (blk == NULL) {                                                      //如果甚至分配不了
                 // no replaceable block available: give up, fwd to next level.
                 incMissCount(pkt);                                                  //写回miss
@@ -511,7 +512,6 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
     if (doFastWrites && (pkt->cmd == MemCmd::WriteReq) &&
         (pkt->getSize() == blkSize) && (pkt->getOffset(blkSize) == 0)) {
         pkt->cmd = MemCmd::WriteInvalidateReq;
-	//std::cout << "promote WriteInvalidate successed, tag: " << pkt->getAddr() << std::endl;//sxj
         DPRINTF(Cache, "packet promoted from Write to WriteInvalidate\n");
         assert(isTopLevel); // should only happen at L1 or I/O cache
     }
@@ -540,11 +540,6 @@ Cache::recvTimingReq(PacketPtr pkt)
         assert(success);
         return true;
     }
-
-    //sxj
-    //std::cout << "promote failured, tag: " << pkt->getAddr() << " cmd: " << pkt->cmd.toString(); //sxj
-    //std::cout << std::endl;
-    //sxj end
 
     promoteWholeLineWrites(pkt);
 
@@ -612,7 +607,9 @@ Cache::recvTimingReq(PacketPtr pkt)
         PacketList writebacks;
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
+        printf("doing access\n");//sxj
         satisfied = access(pkt, blk, lat, writebacks);
+        printf("done access\n");
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
         while (!writebacks.empty()) {
@@ -825,9 +822,7 @@ Cache::recvTimingReq(PacketPtr pkt)
                 // schedule an event to the queued port, when a cacheable miss
                 // is forwarded to MSHR queue.
                 // We take also into account the additional delay of the xbar.
-		        //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
                 allocateMissBuffer(pkt, forward_time, true);                        //未命中mshr，且非上面if的就分配到mshr中
-		        //std::cout << "entering the MSHR, tag: " << pkt->getAddr() << std::endl; 
             }
 
             if (prefetcher) {
@@ -841,7 +836,6 @@ Cache::recvTimingReq(PacketPtr pkt)
     if (next_pf_time != MaxTick)
         requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),           //通知MemSide端口准备发送
                                                 next_pf_time));
-    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     return true;                                                                    //到现在为止，作为一个write miss，现在进入了MSHR
 }
 
@@ -851,9 +845,6 @@ PacketPtr
 Cache::getBusPacket(PacketPtr cpu_pkt, CacheBlk *blk,
                     bool needsExclusive) const
 {
-
-    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
-
     bool blkValid = blk && blk->isValid();
 
     if (cpu_pkt->req->isUncacheable()) {
@@ -1409,7 +1400,6 @@ Cache::recvTimingResp(PacketPtr pkt)
 
     DPRINTF(Cache, "Leaving %s with %s for addr %#llx\n", __func__,
             pkt->cmdString(), pkt->getAddr());
-    //DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     delete pkt;
 }
 
@@ -1542,7 +1532,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
         blk = tags->findVictim(addr);
     //the findVictim for Global cache
     else if (is_read)
-        blk = tags->findVictimNR(addr);
+        blk = tags->findVictimNR(addr);//sxj
     //findVictimNR is a new function
     else
         blk = tags->findVictim(addr);
@@ -2032,7 +2022,6 @@ Cache::getNextMSHR()
         }
 
         // No conflicts; issue write
-	//std::cout << "sending from write buffer" << std::endl;//sxj
         return write_mshr;
     } else if (miss_mshr) {
         // need to check for conflicting earlier writeback
@@ -2092,14 +2081,9 @@ Cache::getNextMSHR()
 PacketPtr
 Cache::getTimingPacket()
 {
-    DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
+    DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
     MSHR *mshr = getNextMSHR();                                                 //从MSHR或者write buffer中选择一个服务对象
                                                                                 //看来结构体是共通的
-    //sxj
-    //std::cout << "now the cache: " << std::endl;
-    //tags->print();
-    //std::cout << std::endl;
-    //sxj end
     if (mshr == NULL) {
         return NULL;
     }
