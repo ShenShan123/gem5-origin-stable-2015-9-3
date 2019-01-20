@@ -345,10 +345,10 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     //sxj end
     //std::cout << "before accessBlockNew" << std::endl; 
     //std::cout << "calling the accessBlockNew by : " << name() << std::endl;
-    printf("doing accessBlock\n");
+    //printf("doing accessBlock\n");
     //blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
     blk = tags->accessBlockNew(pkt->getAddr(), pkt->isSecure(), lat, id, cacheLevel);
-    printf("done accessBlock\n");
+    //printf("done accessBlock\n");
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());//sxj
     //sxj
     if (pkt->isRead()){
@@ -383,7 +383,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     	//std::cout << "doing a block swap!!!" << std::endl;
     	//std::cout << "blk: " << blk->print() << std::endl;
 
-        //CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
+        CacheBlk *Rblk = tags->findVictimR(pkt->getAddr());
 
 	    //if (Rblk)
 		//std::cout << "Rblk: " << Rblk->print() << std::endl;
@@ -391,9 +391,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // // Save writeback packet for handling by caller
         //     writebacks.push_back(writebackBlk(Rblk));
         // }//又去掉了一个写回
-        printf("doing blockSwap\n");
-        //tags->blockSwap(blk, Rblk, lat, writebacks);
-        printf("done blockSwap\n");
+        //printf("doing blockSwap\n");
+        tags->blockSwap(blk, Rblk, lat, writebacks);
+        //printf("done blockSwap\n");
         if (isTopLevel)
             ++++lat;//******************************这里应该区分l1和l2、l3
         else
@@ -413,9 +413,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         assert(blkSize == pkt->getSize());
         if (blk == NULL) {                                                          //如果写回没有命中本级cache
             // need to do a replacement
-            printf("doing allocate\n");
+            //printf("doing allocate\n");
             blk = allocateBlock(pkt->getAddr(), pkt->isSecure(), 0, true, writebacks);       //上一级发出的写回，本级cache尝试将其allocate
-            printf("done allocate\n");                                                                        //这里的第三个参数为write back
+            //printf("done allocate\n");                                                                        //这里的第三个参数为write back
             if (blk == NULL) {                                                      //如果甚至分配不了
                 // no replaceable block available: give up, fwd to next level.
                 incMissCount(pkt);                                                  //写回miss
@@ -522,7 +522,7 @@ Cache::promoteWholeLineWrites(PacketPtr pkt)
 bool
 Cache::recvTimingReq(PacketPtr pkt)
 {
-    printf("doing recvTimingReq\n");//sxj
+    //printf("doing recvTimingReq\n");//sxj
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
     //@todo Add back in MemDebug Calls
     //    MemDebug::cacheAccess(pkt);
@@ -541,7 +541,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         // @todo This should really enqueue the packet rather
         bool M5_VAR_USED success = memSidePort->sendTimingReq(pkt);
         assert(success);
-        printf("done recvTimingReq\n");
+        //printf("done recvTimingReq\n");
         return true;
     }
 
@@ -594,7 +594,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         // caches along the path to memory are allowed to keep lines
         // in a shared state, and a cache above us already committed
         // to responding
-        printf("done recvTimingReq\n");
+        //printf("done recvTimingReq\n");
         return true;
     }
 
@@ -612,9 +612,9 @@ Cache::recvTimingReq(PacketPtr pkt)
         PacketList writebacks;
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
-        printf("doing access\n");//sxj
+        //printf("doing access\n");//sxj
         satisfied = access(pkt, blk, lat, writebacks);
-        printf("done access\n");
+        //printf("done access\n");
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
         while (!writebacks.empty()) {
@@ -841,7 +841,7 @@ Cache::recvTimingReq(PacketPtr pkt)
     if (next_pf_time != MaxTick)
         requestMemSideBus(Request_PF, std::max(clockEdge(forwardLatency),           //通知MemSide端口准备发送
                                                 next_pf_time));
-    printf("done recvTimingReq\n");
+    //printf("done recvTimingReq\n");
     return true;                                                                    //到现在为止，作为一个write miss，现在进入了MSHR
 }
 
@@ -1148,7 +1148,7 @@ Cache::functionalAccess(PacketPtr pkt, bool fromCpuSide)
 void
 Cache::recvTimingResp(PacketPtr pkt)
 {
-    printf("doing recvTimingResp\n");//sxj
+    //printf("doing recvTimingResp\n");//sxj
     assert(pkt->isResponse());
 
     MSHR *mshr = dynamic_cast<MSHR*>(pkt->senderState);                     //这里相当于假定在mshr一定有接收到的这个pkt对应的entry
@@ -1408,7 +1408,7 @@ Cache::recvTimingResp(PacketPtr pkt)
     DPRINTF(Cache, "Leaving %s with %s for addr %#llx\n", __func__,
             pkt->cmdString(), pkt->getAddr());
     delete pkt;
-    printf("done recvTimingResp\n");//sxj
+    //printf("done recvTimingResp\n");//sxj
 }
 
 PacketPtr
@@ -1630,9 +1630,9 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         bool isRead = pkt->isRead();
         bool isWrite = pkt->isWriteInvalidate()||pkt->cmd == MemCmd::WriteReq;
         // need to do a replacement
-        printf("doing allocateBlock\n");
+        //printf("doing allocateBlock\n");
         blk = allocateBlock(addr, is_secure, isRead, isWrite, writebacks);                           //利用findVictim进行eviction
-        printf("done allocateBlock\n");
+        //printf("done allocateBlock\n");
         if (blk == NULL) {                                                              //如果replace失败
             // No replaceable block... just use temporary storage to
             // complete the current request and then get rid of it
