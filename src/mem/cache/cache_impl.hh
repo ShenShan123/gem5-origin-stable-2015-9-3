@@ -392,13 +392,16 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         //     writebacks.push_back(writebackBlk(Rblk));
         // }//又去掉了一个写回
         //printf("doing blockSwap\n");
-        tags->blockSwap(blk, Rblk, lat, writebacks);
-        //printf("done blockSwap\n");
-        if (isTopLevel)
-            ++++lat;//******************************这里应该区分l1和l2、l3
-        else
-            ++++lat;
-        swaps++;
+
+        if (Rblk){
+            tags->blockSwap(blk, Rblk, lat, writebacks);
+            //printf("done blockSwap\n");
+            if (isTopLevel)
+                ++++lat;//******************************这里应该区分l1和l2、l3
+            else
+                ++++lat;
+            swaps++;
+        }
     }
     //sxj end
 
