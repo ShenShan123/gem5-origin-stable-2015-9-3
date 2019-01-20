@@ -170,11 +170,15 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
             pkt->writeDataToBlock(blk->data, blkSize);//satisfyCpuSideRequest函数中进行数据write的部分
 
             //sxj
-            uint8_t tempdata = *(blk->data);
+            unsigned tempBlkSize = tags->getBlockSize();
             int zeros = 0;
-            while (tempdata+1 < 255){
-                zeros++;
-                tempdata |= tempdata + 1;
+            uint8_t tempdata = 0;
+            for (int ii = 0; ii < tempBlkSize; ii++){
+                tempdata = (blk->data)[ii];
+                while (tempdata + 1 < 255){
+                    zeros++;
+                    tempdata |= tempdata + 1;
+                }
             }
             blk->zeros = zeros;
             //sxj end
@@ -417,11 +421,15 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
 
         //sxj
-        uint8_t tempdata = *(blk->data);
+        unsigned tempBlkSize = tags->getBlockSize();
         int zeros = 0;
-        while (tempdata+1 < 255){
-            zeros++;
-            tempdata |= tempdata + 1;
+        uint8_t tempdata = 0;
+        for (int ii = 0; ii < tempBlkSize; ii++){
+            tempdata = (blk->data)[ii];
+            while (tempdata + 1 < 255){
+                zeros++;
+                tempdata |= tempdata + 1;
+            }
         }
         blk->zeros = zeros;
         //sxj end
@@ -1608,11 +1616,15 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
 
         //sxj
-        uint8_t tempdata = *(blk->data);
+        unsigned tempBlkSize = tags->getBlockSize();
         int zeros = 0;
-        while (tempdata+1 < 255){
-            zeros++;
-            tempdata |= tempdata + 1;
+        uint8_t tempdata = 0;
+        for (int ii = 0; ii < tempBlkSize; ii++){
+            tempdata = (blk->data)[ii];
+            while (tempdata + 1 < 255){
+                zeros++;
+                tempdata |= tempdata + 1;
+            }
         }
         blk->zeros = zeros;
         //sxj end
