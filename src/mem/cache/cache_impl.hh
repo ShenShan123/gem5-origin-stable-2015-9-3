@@ -1561,14 +1561,16 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
     //sxj end
 
     //sxj
-    /*
+    
     if (is_write && !blk->isRobust){
         //std::cout << "write miss with a non-Robust victim line" << std::endl;
         CacheBlk *Rblk = tags->findVictimR(addr);
         //std::cout << "doing a block rounding!!" << std::endl;
-        tags->blockRound(blk, Rblk);//这里只对标志位进行更换
-        rounds++;
-    }*///这种情况（write miss non-Robust）除了进行了标志位的互换，其他的均未进行（选择的Robust对象的写回）
+        if (Rblk){
+            tags->blockRound(blk, Rblk);//这里只对标志位进行更换
+            rounds++;
+        }
+    }//这种情况（write miss non-Robust）除了进行了标志位的互换，其他的均未进行（选择的Robust对象的写回）
     //sxj end
 
     if (blk->isValid() && !blk->isMissed) {
