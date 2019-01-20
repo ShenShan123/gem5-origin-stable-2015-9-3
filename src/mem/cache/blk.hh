@@ -120,7 +120,7 @@ class CacheBlk
 
     //sxj
     /** whether this block has a fault*/
-    bool isFault;
+    bool isSwaped;
 
     /** whether this block is disabled*/
     bool isError;
@@ -182,7 +182,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), isFault(false), isError(false), zeros(0), refCount(0),    //sxj
+          set(-1), isTouched(false), isSwaped(false), isError(false), zeros(0), refCount(0),    //sxj
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

@@ -200,11 +200,16 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         //sxj
         //access内会进入这里。在这里进行纠错
         int zerosData = 0, zerosZeros = 0;//分别是数据中的0个数与零计数中的0个数
-        uint8_t tempdata = *(blk->data);//blk内的数据
         uint8_t tempzeros = blk->zeros;//blk内用于存0的个数的变量
-        while (tempdata+1 < 255){
-            zerosData++;
-            tempdata |= tempdata + 1;
+
+        unsigned tempBlkSize = tags->getBlockSize();
+        uint8_t tempdata = 0;
+        for (int ii = 0; ii < tempBlkSize; ii++){
+            tempdata = (blk->data)[ii];
+            while (tempdata + 1 < 255){
+                zerosData++;
+                tempdata |= tempdata + 1;
+            }
         }
         while (tempzeros+1 < 255){
             zerosZeros++;
@@ -224,14 +229,14 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
 
         if(errorHappened && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){//发生错误
             faultReads++;
-            blk->isFault = true;//设置错误标志
-            blk->isError = true;
+            blk->isError = true;//设置错误标志
             //找一个未设置isFault的，互换标志即可
             CacheBlk *NFblk = tags->findNonFault(pkt->getAddr());
             if(NFblk){
                 faultRemaps++;
-                blk->isFault = false;
-                NFblk->isFault = true;
+                blk->isError = false;
+                NFblk->isError = true;
+                blk->isSwaped = true;
             }
         }
 
@@ -385,7 +390,10 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
     blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
-
+    if (blk && blk->isError && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){
+        ++++lat;
+        blk->isError = false;
+    }
     DPRINTF(Cache, "%s%s addr %#llx size %d (%s) %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
             pkt->getAddr(), pkt->getSize(), pkt->isSecure() ? "s" : "ns",
@@ -443,9 +451,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // OK to satisfy access
         incHitCount(pkt);
         satisfyCpuSideRequest(pkt, blk);//access函数中的satisfyCpuSideRequest
-        if (blk && blk->isError && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){
-            ++++lat;
-            blk->isError = false;
+        if (blk && blk->isSwaped){
+            lat += Cycles(2);//sxj
+            blk->isSwaped = false; 
         }
         return true;
     }
@@ -1253,6 +1261,9 @@ Cache::recvTimingResp(PacketPtr pkt)
             if (is_fill) {
                 satisfyCpuSideRequest(tgt_pkt, blk,
                                       true, mshr->hasPostDowngrade());
+                if (blk && blk->isSwaped){
+                    blk->isSwaped = false;//sxj 
+                }
 
                 // //sxj
                 // if (blk->isError && pkt->isRead()){

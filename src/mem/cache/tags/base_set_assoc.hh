@@ -248,7 +248,7 @@ public:
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
             blk = sets[set].blks[i];
-            if (!blk->isFault) {
+            if (!blk->isError) {
                 break;
             }
         }
