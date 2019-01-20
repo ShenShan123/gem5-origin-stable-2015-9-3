@@ -1529,7 +1529,7 @@ Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
 
             if (blk->isDirty()) {
                 // Save writeback packet for handling by caller
-                writebacks.push_back(writebackBlk(blk));
+                writebacks.push_back(writebackBlk(blk));//被allocate的Block会被送往write buffer进行写回
             }
         }
     }
@@ -2029,28 +2029,28 @@ Cache::getNextMSHR()
 
     // If we got a write buffer request ready, first priority is a
     // full write buffer, otherwhise we favour the miss requests
-    if (write_mshr &&
+    if (write_mshr &&//如果找到的是写回
         ((writeBuffer.isFull() && writeBuffer.inServiceEntries == 0) ||
          !miss_mshr)) {
         // need to search MSHR queue for conflicting earlier miss.
         MSHR *conflict_mshr =
             mshrQueue.findPending(write_mshr->blkAddr,
-                                  write_mshr->isSecure);
+                                  write_mshr->isSecure);//检查拿到的写回条目在MSHR中是否有重复
 
         if (conflict_mshr && conflict_mshr->order < write_mshr->order) {
             // Service misses in order until conflict is cleared.
-            return conflict_mshr;
+            return conflict_mshr;//如果有重复，就将对应的MSHR中的要求进行发送
 
             // @todo Note that we ignore the ready time of the conflict here
         }
 
         // No conflicts; issue write
-        return write_mshr;
+        return write_mshr;//如果没有重复，就将找到的写回进行发送
     } else if (miss_mshr) {
         // need to check for conflicting earlier writeback
         MSHR *conflict_mshr =
             writeBuffer.findPending(miss_mshr->blkAddr,
-                                    miss_mshr->isSecure);
+                                    miss_mshr->isSecure);//同样，找到MSHR时也要进行检查
         if (conflict_mshr) {
             // not sure why we don't check order here... it was in the
             // original code but commented out.
@@ -2064,7 +2064,7 @@ Cache::getNextMSHR()
             // should we return write_mshr here instead?  I.e. do we
             // have to flush writes in order?  I don't think so... not
             // for Alpha anyway.  Maybe for x86?
-            return conflict_mshr;
+            return conflict_mshr;//如果发生了冲突，就把对应的write back发送，这个很怪
 
             // @todo Note that we ignore the ready time of the conflict here
         }
@@ -2074,7 +2074,7 @@ Cache::getNextMSHR()
     }
 
     // fall through... no pending requests.  Try a prefetch.
-    assert(!miss_mshr && !write_mshr);
+    assert(!miss_mshr && !write_mshr);//后面是预取，就不关注了
     if (prefetcher && mshrQueue.canPrefetch()) {
         // If we have a miss queue slot, we can try a prefetch
         PacketPtr pkt = prefetcher->getPacket();
@@ -2106,7 +2106,7 @@ Cache::getTimingPacket()
 {
     DPRINTF(CacheTags, "%s tags: %s\n", __func__, tags->print());
     MSHR *mshr = getNextMSHR();                                                 //从MSHR或者write buffer中选择一个服务对象
-                                                                                //看来结构体是共通的
+                                                                                //通过getNextMSHR获得下一个准备发送的MSHR条目
     if (mshr == NULL) {
         return NULL;
     }
@@ -2124,9 +2124,9 @@ Cache::getTimingPacket()
         //assert(tags->findBlock(mshr->blkAddr, mshr->isSecure) == NULL);         //确保准备发出的对象在cache内找不到
         pkt = tgt_pkt;
     } else {
-        CacheBlk *blk = tags->findBlock(mshr->blkAddr, mshr->isSecure);
+        CacheBlk *blk = tags->findBlock(mshr->blkAddr, mshr->isSecure);//在这里进行查找
 
-        if (tgt_pkt->cmd == MemCmd::HardPFReq && forwardSnoops) {
+        if (tgt_pkt->cmd == MemCmd::HardPFReq && forwardSnoops) {//只有在预取的时候会检查cache内是否有副本
             // We need to check the caches above us to verify that
             // they don't have a copy of this block in the dirty state
             // at the moment. Without this check we could get a stale
