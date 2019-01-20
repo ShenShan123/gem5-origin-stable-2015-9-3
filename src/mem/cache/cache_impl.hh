@@ -170,7 +170,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
             pkt->writeDataToBlock(blk->data, blkSize);//satisfyCpuSideRequest函数中进行数据write的部分
 
             //sxj
-            unsigned tempBlkSize = tags->getBlockSize();
+            unsigned tempBlkSize = getBlockSize();
             int zeros = 0;
             uint8_t tempdata = 0;
             for (int ii = 0; ii < tempBlkSize; ii++){
@@ -202,7 +202,7 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         int zerosData = 0, zerosZeros = 0;//分别是数据中的0个数与零计数中的0个数
         uint8_t tempzeros = blk->zeros;//blk内用于存0的个数的变量
 
-        unsigned tempBlkSize = tags->getBlockSize();
+        unsigned tempBlkSize = getBlockSize();
         uint8_t tempdata = 0;
         for (int ii = 0; ii < tempBlkSize; ii++){
             tempdata = (blk->data)[ii];
@@ -429,7 +429,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
 
         //sxj
-        unsigned tempBlkSize = tags->getBlockSize();
+        unsigned tempBlkSize = getBlockSize();
         int zeros = 0;
         uint8_t tempdata = 0;
         for (int ii = 0; ii < tempBlkSize; ii++){
@@ -1627,7 +1627,7 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
 
         //sxj
-        unsigned tempBlkSize = tags->getBlockSize();
+        unsigned tempBlkSize = getBlockSize();
         int zeros = 0;
         uint8_t tempdata = 0;
         for (int ii = 0; ii < tempBlkSize; ii++){
