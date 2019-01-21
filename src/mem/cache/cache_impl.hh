@@ -387,10 +387,10 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
 	    //if (Rblk)
 		//std::cout << "Rblk: " << Rblk->print() << std::endl;
-        // if (Rblk->isDirty()) {
+        if (Rblk && Rblk->isDirty()) {
         // // Save writeback packet for handling by caller
-        //     writebacks.push_back(writebackBlk(Rblk));
-        // }//又去掉了一个写回
+            writebacks.push_back(writebackBlk(Rblk));
+        }//又去掉了一个写回
         //printf("doing blockSwap\n");
 
         if (Rblk){
@@ -1565,6 +1565,10 @@ Cache::allocateBlock(Addr addr, bool is_secure, bool is_read, bool is_write, Pac
     if (is_write && !blk->isRobust){
         //std::cout << "write miss with a non-Robust victim line" << std::endl;
         CacheBlk *Rblk = tags->findVictimR(addr);
+        if (Rblk && Rblk->isDirty()) {
+        // // Save writeback packet for handling by caller
+            writebacks.push_back(writebackBlk(Rblk));
+        }
         //std::cout << "doing a block rounding!!" << std::endl;
         if (Rblk){
             tags->blockRound(blk, Rblk);//这里只对标志位进行更换
