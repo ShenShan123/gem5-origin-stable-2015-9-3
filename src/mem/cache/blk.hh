@@ -115,6 +115,17 @@ class CacheBlk
      */
     int set;
 
+    //sxj
+    /** whether this block is a weak block on the whole*/
+    bool isWeak;
+    /** whether the data in the block is just operated by a write operation*/
+    bool isW;
+    /** whether the data in the block is just operated by a read operation*/
+    bool isR;
+    /** whether the data in the block has been reused*/
+    bool isReused;
+    //sxj end
+
     /** whether this block has been touched */
     bool isTouched;
 
@@ -171,7 +182,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isTouched(false), refCount(0),
+          set(-1), isWeak(false), isW(false), isR(false), isReused(false), isTouched(false), refCount(0),//sxj
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}
@@ -233,6 +244,7 @@ class CacheBlk
     {
         status = 0;
         isTouched = false;
+        isReused = false;//当block被invalid之后，重置isReused标志
         clearLoadLocks();
     }
 

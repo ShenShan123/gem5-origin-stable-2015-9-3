@@ -78,6 +78,14 @@ BaseTags::regStats()
         .flags(total)
         ;
 
+    //sxj
+    setAccess
+        .name(name()+".set_access")
+        .init(0)
+        .desc("number of accesses for each sets")
+        ;
+    //sxj end
+
     tagsInUse
         .name(name() + ".tagsinuse")
         .desc("Cycle average of tags in use")

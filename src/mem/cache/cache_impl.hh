@@ -173,6 +173,10 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
         // appended themselves to this cache before knowing the store
         // will fail.
         blk->status |= BlkDirty;
+        //sxj
+        blk->isW = true;
+        blk->isR = false;
+        //sxj end
         DPRINTF(Cache, "%s for %s addr %#llx size %d (write)\n", __func__,
                 pkt->cmdString(), pkt->getAddr(), pkt->getSize());
     } else if (pkt->isRead()) {
@@ -180,6 +184,10 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
             blk->trackLoadLocked(pkt);
         }
         pkt->setDataFromBlock(blk->data, blkSize);
+        //sxj
+        blk->isW = false;
+        blk->isR = true;
+        //sxj end
         if (pkt->getSize() == blkSize) {
             // special handling for coherent block requests from
             // upper-level caches
@@ -334,6 +342,68 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             pkt->getAddr(), pkt->getSize(), pkt->isSecure() ? "s" : "ns",
             blk ? "hit " + blk->print() : "miss");
 
+
+    //sxj
+    //printf("packet's size = %d\n", pkt->getSize());
+    packetSize.sample(pkt->getSize());
+    if (blk && (name() == "system.l2")){//这里的cycle数量变化在所有的cache中均考虑了
+        if (pkt->isRead()){
+            if (!blk->isWeak){
+                readHitsStrong++;
+            }
+            else {
+                lat += Cycles(5);//for the additional cycle by accessing the weak cell
+                readHitsWeak++;
+            }
+        }
+        else {
+            if (!blk->isWeak){
+                writeHitsStrong++;
+            }
+            else {
+                lat += Cycles(5);
+                writeHitsWeak++;
+            }
+        }
+    }
+    //这里检测是否要进行swap，先检测accessBlk是否命中，命中后检测操作为读还是写
+    
+    if (blk && (name() == "system.l2")) {//hit
+        /*printf("come from ");
+        if (name() == "system.cpu.dcache")
+            printf("D cache\n");
+        else
+            printf("L2 cache\n");*/
+        if (pkt->isRead()){
+            if (blk->isWeak){
+                //printf("there is a read hit weak.\n");
+                CacheBlk* Swapblk = NULL;
+                Swapblk = tags->findVictimSwap(pkt->getAddr());
+                if (Swapblk){//找到了可以进行swap的weak存储单元
+                    tags->blockSwap(blk, Swapblk, lat);//将block进行交换
+                    lat += Cycles(6);
+                    blockSwaps++;
+                    //printf("doing a block swap, and the new block is a ");
+                    //if (!blk->isWeak)
+                        //printf("strong one.\n");
+                    //else
+                        //printf("still weak one??\n");
+                }
+                //else {
+                    //printf("there is no strong block in this set!\n");
+                //}
+            }
+        }
+        blk->isReused = true;
+    }
+    
+    //sxj end
+
+    //sxj
+    if (blk)
+        hitLatencyAll += lat;
+    //sxj end
+
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->cmd == MemCmd::Writeback) {
@@ -346,12 +416,15 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 incMissCount(pkt);
                 return false;
             }
-            tags->insertBlock(pkt, blk);
+            tags->insertBlock(pkt, blk);//在insertBlock中进行isReused标志的重置
 
             blk->status = (BlkValid | BlkReadable);
             if (pkt->isSecure()) {
                 blk->status |= BlkSecure;
             }
+        }
+        else {//写回发生了hit
+            blk->isReused = true;
         }
         blk->status |= BlkDirty;
         if (pkt->isSupplyExclusive()) {
@@ -360,6 +433,13 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
+
+        //sxj
+        //对于writeback的RW标志更新
+        blk->isW = true;
+        blk->isR = false;
+        //sxj end
+
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
         return true;
@@ -368,7 +448,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                                       : blk->isReadable())) {
         // OK to satisfy access
         incHitCount(pkt);
-        satisfyCpuSideRequest(pkt, blk);
+        satisfyCpuSideRequest(pkt, blk);//除去writebacj之外均在satisfied内进行
         return true;
     }
 
@@ -534,6 +614,51 @@ Cache::recvTimingReq(PacketPtr pkt)
         // Note that lat is passed by reference here. The function
         // access() calls accessBlock() which can modify lat value.
         satisfied = access(pkt, blk, lat, writebacks);
+
+        //sxj
+
+        unsigned int addr_block = blockAlign(pkt->getAddr());   
+        bool foundIt = false;
+        int setIdx = tags->extractSet(pkt->getAddr());          //首先获得pkt对应的block地址以及tag地址
+        std::list<std::pair<unsigned int, unsigned int> >::iterator Pws;
+        if (wsRecord.find(setIdx) != wsRecord.end()){                   //这里的wsRecord是base.hh中的成员，先找到set
+
+            for (Pws = wsRecord[setIdx].begin(); Pws != wsRecord[setIdx].end(); Pws++){
+                if (Pws->first == addr_block){                          //如果是read，就出栈，sample；如果是write，就+1
+                    foundIt = true;
+                    if(pkt->isWrite()){
+                        (Pws->second)++;
+                        break;
+                    }
+                    else if (pkt->isRead()){
+                        writeSequence.sample(Pws->second);
+                        wsRecord[setIdx].erase(Pws);
+                    }
+                }
+            }
+
+            if (!foundIt)
+                wsRecord[setIdx].push_back(std::make_pair(addr_block, 0));
+        }
+
+
+        std::list<unsigned int>::iterator Prd;
+        if(rdRecord.find(setIdx) != rdRecord.end()){                   //这里的Map_r是base.hh中的成员，先找到set
+            int reuse_distance =1;
+            for(Prd = rdRecord[setIdx].end(); Prd != rdRecord[setIdx].begin(); ){   //自底向上寻找，实际上是自新向旧寻找
+                Prd--;
+                if (*Prd == addr_block){
+                    reuseDistanceDistribution.sample(reuse_distance);
+                    break;
+                }
+                else
+                    reuse_distance++;
+            }
+        }
+        if(rdRecord[setIdx].size()>=2048)
+            rdRecord[setIdx].erase(rdRecord[setIdx].begin());
+        rdRecord[setIdx].push_back(addr_block);
+        //sxj end
 
         // copy writebacks to write buffer here to ensure they logically
         // proceed anything happening below
@@ -1415,7 +1540,13 @@ Cache::invalidateVisitor(CacheBlk &blk)
 CacheBlk*
 Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
 {
-    CacheBlk *blk = tags->findVictim(addr);
+    //sxj
+    CacheBlk *blk;
+    if (name() == "system.l2")
+        blk = tags->findVictimWrite(addr);
+    else
+        blk = tags->findVictim(addr);
+    //sxj end
 
     if (blk->isValid()) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);

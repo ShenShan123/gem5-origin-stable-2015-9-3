@@ -53,7 +53,7 @@
 
 using namespace std;
 
-BaseSetAssoc::BaseSetAssoc(const Params *p)
+BaseSetAssoc::BaseSetAssoc(const Params *p) //初始化过程所使用的函数
     :BaseTags(p), assoc(p->assoc),
      numSets(p->size / (p->block_size * p->assoc)),
      sequentialAccess(p->sequential_access)
@@ -68,6 +68,10 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
     if (assoc <= 0) {
         fatal("associativity must be greater than zero");
     }
+
+    //sxj
+    //srand(2);
+    //sxj end
 
     blkMask = blkSize - 1;
     setShift = floorLog2(blkSize);
@@ -88,6 +92,32 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
 
         sets[i].blks = new BlkType*[assoc];
 
+        //sxj
+        int subblk[assoc][4];
+        int subblkError = 0; 
+        //在这里进行map的生成，已有参数：assoc，subError = 0.12
+        for (int ii = 0; ii < assoc; ii++){
+            for (int jj = 0; jj < 4; jj++){
+                subblkError = rand()%100;
+                if (subblkError < 12)
+                    subblk[ii][jj] = 1;
+                else
+                    subblk[ii][jj] = 0;
+            }
+        }
+        for (int ii = 0; ii < 4; ii++){
+            for (int jj = 1; jj < assoc; jj++){
+                subblk[0][ii] += subblk[jj][ii];//used for countting the error subblock in one subset
+            }
+        }
+        int maxError = 0;
+        for (int ii = 0; ii < 4; ii++){
+            if (maxError < subblk[0][ii])
+                maxError = subblk[0][ii];
+        }
+
+        //sxj end
+
         // link in the data blocks
         for (unsigned j = 0; j < assoc; ++j) {
             // locate next cache block
@@ -104,6 +134,12 @@ BaseSetAssoc::BaseSetAssoc(const Params *p)
             // table; won't matter because the block is invalid
             blk->tag = j;
             blk->whenReady = 0;
+            //sxj
+            if (maxError){
+                blk->isWeak = true;
+                maxError--;
+            }
+            //sxj end
             blk->isTouched = false;
             blk->size = blkSize;
             sets[i].blks[j]=blk;

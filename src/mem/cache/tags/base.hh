@@ -106,6 +106,10 @@ class BaseTags : public ClockedObject
      */
     Stats::Scalar sampledRefs;
 
+    //sxj
+    Stats::SparseHistogram setAccess;
+    //sxj end
+
     /**
      * Average number of references to a block before is was replaced.
      * @todo This should change to an average stat once we have them.
@@ -208,6 +212,12 @@ class BaseTags : public ClockedObject
     virtual Addr regenerateBlkAddr(Addr tag, unsigned set) const = 0;
 
     virtual CacheBlk* findVictim(Addr addr) = 0;
+
+    virtual CacheBlk* findVictimWrite(Addr addr){return NULL;}//sxj
+
+    virtual CacheBlk* findVictimSwap(Addr addr){return NULL;}//sxj
+
+    virtual void blockSwap(CacheBlk *blk, CacheBlk *Swapblk, Cycles &lat){}//sxj
 
     virtual int extractSet(Addr addr) const = 0;
 

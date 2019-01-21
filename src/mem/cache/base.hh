@@ -107,6 +107,11 @@ class BaseCache : public MemObject
         NUM_REQUEST_CAUSES
     };
 
+    //sxj
+    std::map<int, std::list<std::pair<unsigned int, unsigned int> > > wsRecord;
+    //std::map<int, std::list<unsigned int> > wsNumber;
+    std::map<int, std::list<unsigned int> > rdRecord;
+    //sxj end
   protected:
 
     /**
@@ -345,6 +350,23 @@ class BaseCache : public MemObject
     /** Number of hits per thread for each type of command. @sa Packet::Command */
     Stats::Vector hits[MemCmd::NUM_MEM_CMDS];
     /** Number of hits for demand accesses. */
+
+    //sxj
+    /** Number of read/write hits for a strong/weak line*/
+    Stats::Scalar readHitsStrong;
+    Stats::Scalar readHitsWeak;
+    Stats::Scalar writeHitsStrong;
+    Stats::Scalar writeHitsWeak;
+    Stats::SparseHistogram packetSize;
+    Stats::Scalar blockSwaps;
+    /** Number of the successive write without read. */
+    Stats::SparseHistogram writeSequence;
+    /** RDD. */
+    Stats::SparseHistogram reuseDistanceDistribution;
+    /** collect the hit latency **/
+    Stats::Scalar hitLatencyAll;
+    //sxj end
+    
     Stats::Formula demandHits;
     /** Number of hit for all accesses. */
     Stats::Formula overallHits;

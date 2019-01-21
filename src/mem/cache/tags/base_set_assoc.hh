@@ -177,8 +177,13 @@ public:
     {
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
+
+        //sxj
+        setAccess.sample(set);
+        //sxj end
+
         BlkType *blk = sets[set].findBlk(tag, is_secure);
-        lat = accessLatency;;
+        lat = accessLatency;
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on
@@ -202,6 +207,7 @@ public:
         }
 
         return blk;
+        //blk的swap过程在退出本函数，回到access()后进行
     }
 
     /**
@@ -236,6 +242,93 @@ public:
 
         return blk;
     }
+
+    //sxj
+    /*CacheBlk* findVictimWrite(Addr addr){
+        return findVictim(addr);
+    }*/
+
+
+    CacheBlk* findVictimWrite(Addr addr){
+        BlkType *blk = NULL;
+        BlkType *Wblk = NULL;
+        int set = extractSet(addr);
+        bool noInvalid = false;
+
+        // prefer to evict an invalid block
+        for (int i = 0; i < assoc; ++i) {
+            blk = sets[set].blks[i];
+            if (!blk->isValid()) {//第一次根据通常的LRU进行查找
+                break;
+            }
+        }
+        //到这里，blk找到的结果要么是invalid，要么是LRU
+
+        if (blk->isValid()){//如果第一次的查找结果不是invalid结果，则重新优先选择一个weak、write对象
+            noInvalid = true;
+            for (int i = assoc-1; i >= 0; --i) {
+                if (blk->isWeak){
+                    Wblk = sets[set].blks[i];//从所有的weak write中选择LRU的那个
+                    break;
+                }
+            }
+        }
+        if (noInvalid){//第一轮找到的对象不是invalid
+            if (Wblk){
+                blk = Wblk;
+            }
+            else{//第二轮也没有找到
+                for (int i = assoc-1; i >= 0; --i) {//开始第三轮，仅要求weak
+                    if (blk->isW){
+                        Wblk = sets[set].blks[i];//从所有的weak中选择LRU的那个
+                        break;
+                }
+                if (Wblk)
+                    blk = Wblk;
+                }
+            }
+        }
+        return blk;
+    }
+    
+
+    CacheBlk* findVictimSwap(Addr addr){//本函数的目的在于寻找一个替换的对象
+        BlkType *blk = NULL;
+        int set = extractSet(addr);
+        //printf("set %d:(assoc = %d)\n", set, assoc);
+        for (int i = assoc-1; i >= 0; --i) {
+            //printf("%dth: ", i);
+            if (sets[set].blks[i]){
+                if (!(sets[set].blks[i])->isWeak) {//从LRU位置向前进行查询
+                    //printf("strong ");
+                    blk = sets[set].blks[i];
+                    break;
+                }
+                //else
+                    //printf("weak ");
+            }
+            //else
+                //printf("sets[set].blks[i] is NULL!\n");
+        }
+        //printf("\n");
+        return blk;
+    }
+
+    void blockSwap(CacheBlk *blk, CacheBlk *Swapblk, Cycles &lat){
+        /*if (Swapblk != NULL) {
+            if (Swapblk->whenReady > curTick()
+                && Swapblk->whenReady > blk->whenReady
+                && cache->ticksToCycles(Swapblk->whenReady - curTick())
+                > accessLatency) {
+                lat = cache->ticksToCycles(Swapblk->whenReady - curTick());
+            }
+            Swapblk->refCount += 1;
+        }*/
+        //这里需要交换的对象实际上只有Weak，注意LRU关系，blk处于MRU
+        blk->isWeak = false;
+        Swapblk->isWeak = true;
+    }
+    //sxj end
 
     /**
      * Insert the new block into the cache.

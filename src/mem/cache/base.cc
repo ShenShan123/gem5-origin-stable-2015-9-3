@@ -195,6 +195,48 @@ BaseCache::regStats()
 #define SUM_NON_DEMAND(s) \
     (s[MemCmd::SoftPFReq] + s[MemCmd::HardPFReq])
 
+    //sxj
+    readHitsStrong
+        .name(name() + ".read_hits_strong")
+        .desc("number of read hits to a strong line")
+        ;
+    readHitsWeak
+        .name(name() + ".read_hits_weak")
+        .desc("number of read hits to a weak line")
+        ;
+    writeHitsStrong
+        .name(name() + ".write_hits_strong")
+        .desc("number of write hits to a strong line")
+        ;
+    writeHitsWeak
+        .name(name() + ".write_hits_weak")
+        .desc("number of write hits to a weak line")
+        ;
+    packetSize
+        .name(name()+".packet_size")
+        .init(0)
+        .desc("packet size")
+        ;
+    writeSequence
+        .name(name()+".write_sequence")
+        .init(0)
+        .desc("successive write number without any read")
+        ;
+    reuseDistanceDistribution
+        .name(name()+".reuse_distance_distribution")
+        .init(0)
+        .desc("RDD")
+        ;
+    blockSwaps
+        .name(name() + ".block_swaps")
+        .desc("number of block swaps")
+        ;
+    hitLatencyAll
+        .name(name()+".hit_latency_all")
+        .desc("the hit latency")
+        ;
+    //sxj end
+
     demandHits
         .name(name() + ".demand_hits")
         .desc("number of demand (read+write) hits")
