@@ -227,6 +227,11 @@ BaseCache::regStats()
         .init(0)
         .desc("RDD")
         ;
+    swapedReuseDistanceDistribution
+        .name(name()+".swaped_reuse_distance_distribution")
+        .init(0)
+        .desc("SRDD")
+        ;
     blockSwaps
         .name(name() + ".block_swaps")
         .desc("number of block swaps")

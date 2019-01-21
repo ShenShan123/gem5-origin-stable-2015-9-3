@@ -649,6 +649,9 @@ Cache::recvTimingReq(PacketPtr pkt)
                 Prd--;
                 if (*Prd == addr_block){
                     reuseDistanceDistribution.sample(reuse_distance);
+                    //collect the RDD of swaped blocks
+                    if (blk->isSwaped)
+                        swapedReuseDistanceDistribution.sample(reuse_distance)
                     break;
                 }
                 else
@@ -658,6 +661,7 @@ Cache::recvTimingReq(PacketPtr pkt)
         if(rdRecord[setIdx].size()>=2048)
             rdRecord[setIdx].erase(rdRecord[setIdx].begin());
         rdRecord[setIdx].push_back(addr_block);
+
         //sxj end
 
         // copy writebacks to write buffer here to ensure they logically

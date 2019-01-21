@@ -363,6 +363,8 @@ class BaseCache : public MemObject
     Stats::SparseHistogram writeSequence;
     /** RDD. */
     Stats::SparseHistogram reuseDistanceDistribution;
+    /** RDD of Swaped blocks. */
+    Stats::SparseHistogram swapedReuseDistanceDistribution;
     /** collect the hit latency **/
     Stats::Scalar hitLatencyAll;
     //sxj end
