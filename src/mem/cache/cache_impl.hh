@@ -650,7 +650,7 @@ Cache::recvTimingReq(PacketPtr pkt)
                 if (*Prd == addr_block){
                     reuseDistanceDistribution.sample(reuse_distance);
                     //collect the RDD of swaped blocks
-                    if (blk->isSwaped)
+                    if (blk && blk->isSwaped)
                         swapedReuseDistanceDistribution.sample(reuse_distance);
                     break;
                 }
