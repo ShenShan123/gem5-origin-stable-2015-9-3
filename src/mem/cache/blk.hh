@@ -124,6 +124,8 @@ class CacheBlk
     bool isR;
     /** whether the data in the block has been reused*/
     bool isReused;
+    /** whether the block has been swaped*/
+    bool isSwaped;
     //sxj end
 
     /** whether this block has been touched */
@@ -182,7 +184,7 @@ class CacheBlk
     CacheBlk()
         : task_id(ContextSwitchTaskId::Unknown),
           asid(-1), tag(0), data(0) ,size(0), status(0), whenReady(0),
-          set(-1), isWeak(false), isW(false), isR(false), isReused(false), isTouched(false), refCount(0),//sxj
+          set(-1), isWeak(false), isW(false), isR(false), isReused(false), isSwaped(false), isTouched(false), refCount(0),//sxj
           srcMasterId(Request::invldMasterId),
           tickInserted(0)
     {}

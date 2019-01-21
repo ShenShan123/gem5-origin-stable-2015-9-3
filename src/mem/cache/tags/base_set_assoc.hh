@@ -327,6 +327,7 @@ public:
         //这里需要交换的对象实际上只有Weak，注意LRU关系，blk处于MRU
         blk->isWeak = false;
         Swapblk->isWeak = true;
+        blk->isSwaped = true;
     }
     //sxj end
 

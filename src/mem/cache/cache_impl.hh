@@ -1572,6 +1572,8 @@ Cache::allocateBlock(Addr addr, bool is_secure, PacketList &writebacks)
             if (blk->isDirty()) {
                 // Save writeback packet for handling by caller
                 writebacks.push_back(writebackBlk(blk));
+                if (blk->isSwaped)
+                    blk->isSwaped = false;
             }
         }
     }
