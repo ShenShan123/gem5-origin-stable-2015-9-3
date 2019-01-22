@@ -172,15 +172,12 @@ public:
      * @param lat The access latency.
      * @return Pointer to the cache block if found.
      */
+    //sxj
+    //用于匹配统一接口
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat,
-                                 int context_src)
-    {
+                                 int context_src){
         Addr tag = extractTag(addr);
         int set = extractSet(addr);
-
-        //sxj
-        setAccess.sample(set);
-        //sxj end
 
         BlkType *blk = sets[set].findBlk(tag, is_secure);
         lat = accessLatency;
@@ -207,7 +204,65 @@ public:
         }
 
         return blk;
-        //blk的swap过程在退出本函数，回到access()后进行
+    }
+    //sxj end
+
+    CacheBlk* accessBlockNew(Addr addr, bool is_secure, Cycles &lat,
+                                 int context_src, int cacheLevel)
+    {
+	//std::cout << "into the accessBlockNew" << std::endl;
+        Addr tag = extractTag(addr);
+        int set = extractSet(addr);
+        BlkType *blk = sets[set].findBlk(tag, is_secure);
+
+        //sxj
+        // assert (cacheLevel != 0);
+        // if (blk && !blk->isRobust){
+        //     if (cacheLevel == 3 || cacheLevel == 4){
+        //         if (blk->isMultiError){
+        //             blk->isDisabled = true;//只有L2无法进行多错纠正，L1可以
+        //             blk = NULL;//由于发生了一个以上的错误，视为miss，该blk禁用
+        //             //std::cout << "a multi bits error happened in a non-Robust block within L23" << std::endl;
+        //         }
+        //     }
+        // }
+        //sxj end
+
+        lat = accessLatency;
+
+        //sxj
+        if (cacheLevel == 1 || cacheLevel == 2){
+            if (blk && (blk->isSingleError || blk->isMultiError))
+                ++++lat;
+        }
+        if (cacheLevel == 3 || cacheLevel == 4){
+            if (blk && blk->isSingleError)
+                ++lat;
+        }
+        //sxj end
+
+        // Access all tags in parallel, hence one in each way.  The data side
+        // either accesses all blocks in parallel, or one block sequentially on
+        // a hit.  Sequential access with a miss doesn't access data.
+        tagAccesses += assoc;
+        if (sequentialAccess) {
+            if (blk != NULL) {
+                dataAccesses += 1;
+            }
+        } else {
+            dataAccesses += assoc;
+        }
+
+        if (blk != NULL) {
+            if (blk->whenReady > curTick()
+                && cache->ticksToCycles(blk->whenReady - curTick())
+                > lat) {
+                lat = cache->ticksToCycles(blk->whenReady - curTick());
+            }
+            blk->refCount += 1;
+        }
+
+        return blk;
     }
 
     /**
@@ -234,100 +289,106 @@ public:
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            blk = sets[set].blks[i];
-            if (!blk->isValid()) {
-                break;
+            if (!sets[set].blks[i]->isDisabled) {   //sxj
+                blk = sets[set].blks[i];
+                if (!blk->isValid()) {
+                    //blk->isMissed = false;  //sxj
+                    break;
+                }
             }
         }
 
         return blk;
     }
-
     //sxj
-    /*CacheBlk* findVictimWrite(Addr addr){
-        return findVictim(addr);
-    }*/
-
-
-    CacheBlk* findVictimWrite(Addr addr){
+    CacheBlk* findVictimR(Addr addr)
+    {
         BlkType *blk = NULL;
-        BlkType *Wblk = NULL;
         int set = extractSet(addr);
-        bool noInvalid = false;
 
         // prefer to evict an invalid block
         for (int i = 0; i < assoc; ++i) {
-            blk = sets[set].blks[i];
-            if (!blk->isValid()) {//第一次根据通常的LRU进行查找
-                break;
-            }
-        }
-        //到这里，blk找到的结果要么是invalid，要么是LRU
-
-        if (blk->isValid()){//如果第一次的查找结果不是invalid结果，则重新优先选择一个weak、write对象
-            noInvalid = true;
-            for (int i = assoc-1; i >= 0; --i) {
-                if (blk->isWeak){
-                    Wblk = sets[set].blks[i];//从所有的weak write中选择LRU的那个
+            if (!sets[set].blks[i]->isDisabled && sets[set].blks[i]->isRobust) {
+            //if (sets[set].blks[i]->isRobust) {
+                blk = sets[set].blks[i];
+                if (!blk->isValid()) {
+                    //blk->isMissed = false;  //sxj
                     break;
                 }
             }
         }
-        if (noInvalid){//第一轮找到的对象不是invalid
-            if (Wblk){
-                blk = Wblk;
-            }
-            else{//第二轮也没有找到
-                for (int i = assoc-1; i >= 0; --i) {//开始第三轮，仅要求weak
-                    if (blk->isW){
-                        Wblk = sets[set].blks[i];//从所有的weak中选择LRU的那个
-                        break;
-                }
-                if (Wblk)
-                    blk = Wblk;
-                }
-            }
-        }
+
         return blk;
     }
-    
 
-    CacheBlk* findVictimSwap(Addr addr){//本函数的目的在于寻找一个替换的对象
+    CacheBlk* findVictimNR(Addr addr)
+    {
         BlkType *blk = NULL;
-        int set = extractSet(addr);
-        //printf("set %d:(assoc = %d)\n", set, assoc);
-        for (int i = assoc-1; i >= 0; --i) {
-            //printf("%dth: ", i);
-            if (sets[set].blks[i]){
-                if (!(sets[set].blks[i])->isWeak) {//从LRU位置向前进行查询
-                    //printf("strong ");
-                    blk = sets[set].blks[i];
+        int set = extractSet(addr)
+
+        // prefer to evict an invalid block
+        for (int i = 0; i < assoc; ++i) {
+            if (!sets[set].blks[i]->isDisabled && !sets[set].blks[i]->isRobust) {
+            //if (!sets[set].blks[i]->isRobust) {
+                blk = sets[set].blks[i];
+                if (!blk->isValid()) {
+                    //blk->isMissed = false;  //sxj
                     break;
                 }
-                //else
-                    //printf("weak ");
             }
-            //else
-                //printf("sets[set].blks[i] is NULL!\n");
         }
-        //printf("\n");
+
         return blk;
     }
+    //sxj end
 
-    void blockSwap(CacheBlk *blk, CacheBlk *Swapblk, Cycles &lat){
-        /*if (Swapblk != NULL) {
-            if (Swapblk->whenReady > curTick()
-                && Swapblk->whenReady > blk->whenReady
-                && cache->ticksToCycles(Swapblk->whenReady - curTick())
-                > accessLatency) {
-                lat = cache->ticksToCycles(Swapblk->whenReady - curTick());
-            }
-            Swapblk->refCount += 1;
-        }*/
-        //这里需要交换的对象实际上只有Weak，注意LRU关系，blk处于MRU
-        blk->isWeak = false;
-        Swapblk->isWeak = true;
-        blk->isSwaped = true;
+    //sxj
+    /**
+     * Used for the write miss with a non-Robust victim cell.
+     * @param blk1 The victim non-Robust cell.
+     * @param blk2 The LRU Robust cell.
+     */
+    void blockRound(CacheBlk *blk1, CacheBlk *blk2){         
+        bool tempRobust, tempSingleError, tempMultiError;
+        tempRobust = blk1->isRobust;
+        blk1->isRobust = blk2->isRobust;
+        blk2->isRobust = tempRobust;
+        tempSingleError = blk1->isSingleError;
+        blk1->isSingleError = blk2->isSingleError;
+        blk2->isSingleError = tempSingleError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
+        //保留LRU优先级
+        tagAccesses += 1;
+        dataAccesses += 1;
+    }
+
+    /**
+     * Used for the write miss with a non-Robust victim cell.
+     * @param blk1 The hitted non-Robust cell.
+     * @param blk2 The LRU Robust cell.
+     */
+    void blockSwap(CacheBlk *blk1, CacheBlk *blk2, Cycles &lat, PacketList &writebacks){
+        // if (blk2->isDirty()) {
+        //         // Save writeback packet for handling by caller
+        //     writebacks.push_back(writebackBlk(blk2));
+        // }
+    //start the swap
+        //实际上这里只要换isRobust、isSingleError、isMultiError（3个bool）就行了
+        bool tempRobust, tempSingleError, tempMultiError;
+        tempRobust = blk1->isRobust;
+        blk1->isRobust = blk2->isRobust;
+        blk2->isRobust = tempRobust;
+        tempSingleError = blk1->isSingleError;
+        blk1->isSingleError = blk2->isSingleError;
+        blk2->isSingleError = tempSingleError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
+        tempMultiError = blk1->isMultiError;
+        blk1->isMultiError = blk2->isMultiError;
+        blk2->isMultiError = tempMultiError;
     }
     //sxj end
 
@@ -336,7 +397,7 @@ public:
      * @param pkt Packet holding the address to update
      * @param blk The block to update.
      */
-     void insertBlock(PacketPtr pkt, CacheBlk *blk)
+     void insertBlock(PacketPtr pkt, CacheBlk *blk)                             //本函数依旧未对blk的data做出更新
      {
          Addr addr = pkt->getAddr();
          MasterID master_id = pkt->req->masterId();
@@ -367,6 +428,8 @@ public:
 
              blk->invalidate();
          }
+
+	 blk->isMissed = false;//XXXXXX
 
          blk->isTouched = true;
 
