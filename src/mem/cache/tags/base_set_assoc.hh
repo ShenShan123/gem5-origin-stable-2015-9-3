@@ -249,7 +249,7 @@ public:
     }
 
 
-    CacheBlk* findVictimWrite(Addr addr){
+    /*CacheBlk* findVictimWrite(Addr addr){
         BlkType *blk = NULL;
         BlkType *Wblk = NULL;
         int set = extractSet(addr);
@@ -289,7 +289,7 @@ public:
             }
         }
         return blk;
-    }
+    }*/
     
 
     CacheBlk* findVictimSwap(Addr addr){//本函数的目的在于寻找一个替换的对象
