@@ -368,7 +368,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     }
     //这里检测是否要进行swap，先检测accessBlk是否命中，命中后检测操作为读还是写
     
-    if (blk && ( (name() == "system.cpu.dcache") || (name() == "system.cpu.icache")) {//hit
+    if (blk && ( (name() == "system.cpu.dcache") || (name() == "system.cpu.icache")) ) {//hit
         /*printf("come from ");
         if (name() == "system.cpu.dcache")
             printf("D cache\n");
