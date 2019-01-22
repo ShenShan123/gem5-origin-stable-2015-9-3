@@ -244,9 +244,9 @@ public:
     }
 
     //sxj
-    /*CacheBlk* findVictimWrite(Addr addr){
+    CacheBlk* findVictimWrite(Addr addr){
         return findVictim(addr);
-    }*/
+    }
 
 
     CacheBlk* findVictimWrite(Addr addr){
