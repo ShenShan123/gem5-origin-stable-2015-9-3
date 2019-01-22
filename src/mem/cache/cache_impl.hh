@@ -399,7 +399,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (isTopLevel)
                 ++++lat;//******************************这里应该区分l1和l2、l3
             else
-                ++++lat;
+                ++lat;
             swaps++;
         }
     }
