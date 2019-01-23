@@ -135,15 +135,15 @@ BaseSetAssoc::BaseSetAssoc(const Params *p) //初始化过程所使用的函数
             blk->tag = j;
             blk->whenReady = 0;
             //sxj
-            bool blkError = subblk[j][0] || subblk[j][1] || subblk[j][2] || subblk[j][3];
-            if (blkError){
-                blk->isWeak = true;
-            }
-
-            // if (maxError){
+            // bool blkError = subblk[j][0] || subblk[j][1] || subblk[j][2] || subblk[j][3];
+            // if (blkError){
             //     blk->isWeak = true;
-            //     maxError--;
             // }
+
+            if (maxError){
+                blk->isWeak = true;
+                maxError--;
+            }
             //sxj end
             blk->isTouched = false;
             blk->size = blkSize;
