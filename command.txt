@@ -1,0 +1,255 @@
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./perlbench_base.gcc41-amd64bit -o "-I./lib checkspam.pl 2500 5 25 11 150 1 1 1 1" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./bzip2_base.gcc41-amd64bit -o "input.source 280" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+ --mem-size=1024MB 
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./gcc_base.gcc41-amd64bit -o "166.in -o 166.s" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./bwaves_base.gcc41-amd64bit \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+ --mem-size=1024MB 
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c "gamess_base.gcc41-amd64bit" -i "cytosine.2.config" \
+ -n 2 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+--mem-size=1024MB
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./mcf_base.gcc41-amd64bit -o "inp.in" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64\
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+ --mem-size=2048MB 
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./milc_base.gcc41-amd64bit -i "su3imp.in" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+--mem-size=2048MB 
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./zeusmp_base.gcc41-amd64bit  \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64  \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+--mem-size=2048MB
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./gromacs_base.gcc41-amd64bit -o "-silent -deffnm gromacs -nice 0" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 \
+ --mem-size=8192MB
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./cactusADM_base.gcc41-amd64bit -o "benchADM.par" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./leslie3d_base.gcc41-amd64bit -i "leslie3d.in" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./namd_base.gcc41-amd64bit -o "--input namd.input --iterations 38 --output namd.out" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./gobmk_base.gcc41-amd64bit -o "--quiet --mode gtp" -i "13x13.tst" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./dealII_base.gcc41-amd64bit -o "23" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./soplex_base.gcc41-amd64bit -o "-s1 -e -m45000 pds-50.mps" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=10000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./povray_base.gcc41-amd64bit -o "SPEC-benchmark-ref.ini" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./calculix_base.gcc41-amd64bit -o "-i hyperviscoplastic" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/x86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./hmmer_base.gcc41-amd64bit -o "nph3.hmm swiss41" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./sjeng_base.gcc41-amd64bit -o "ref.txt" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 --mem-size=2046MB \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./GemsFDTD_base.gcc41-amd64bit \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64  \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./libquantum_base.gcc41-amd64bit -o "1397 8" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 --mem-size=2046MB 
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./h264ref_base.gcc41-amd64bit -o "-d foreman_ref_encoder_baseline.cfg" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./tonto_base.gcc41-amd64bit\
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./lbm_base.gcc41-amd64bit -o "3000 reference.dat 0 0 100_100_130_ldc.of" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000 --mem-size=2046MB 
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./omnetpp_base.gcc41-amd64bit -o "omnetpp.ini" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./astar_base.gcc41-amd64bit -o "BigLakes2048.cfg" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1i_assoc=4 --l1d_size=32kB --l1d_assoc=4  --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+ 
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./wrf_base.gcc41-amd64bit \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
+
+
+export M5_PATH=/mnt/hgfs/ShareShen/x86_arch
+
+./../build/X86/gem5.fast --outdir=./m5out-se-x86 ./../configs/example/se.py \
+ -c ./Xalan_base.gcc41-amd64bit -o "-v t5.xml xalanc.xsl" \
+ -n 1 --cpu-type=timing --caches --cacheline_size=64 \
+ --l1i_size=32kB --l1d_size=32kB --l1d_assoc=4 --l1i_assoc=4 --l2cache --l2_size=2MB --l2_assoc=8 \
+ --abs-max-tick=20000000000000
