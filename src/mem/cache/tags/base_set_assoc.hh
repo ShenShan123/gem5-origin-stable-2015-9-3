@@ -51,6 +51,7 @@
 #include <cassert>
 #include <cstring>
 #include <list>
+#include <string>
 
 #include "mem/cache/tags/base.hh"
 #include "mem/cache/tags/cacheset.hh"
@@ -176,9 +177,10 @@ public:
                                  int context_src)
     {
         Addr tag = extractTag(addr);
+
         int set = extractSet(addr);
         BlkType *blk = sets[set].findBlk(tag, is_secure);
-        lat = accessLatency;;
+        lat = accessLatency;
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on

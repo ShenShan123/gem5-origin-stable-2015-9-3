@@ -771,13 +771,12 @@ BaseCache::regStats()
         .name(name() +".no_allocate_misses")
         .desc("Number of misses that were no-allocate")
         ;
+
     // added by shen
-    numZeroSetBytes
-        .init(9)
-        .name(name() + ".numZeroSetBytes")
-        .desc("number of zero and set bytes writen in the cache, \
-               index 0 is for zero bit num, 1-7 is for zero n-byte num, \
-               the last index 8 is total bytes writen in cache");
+    zeroOne_oneZero
+        .init(515) // 515
+        .name(name() + ".zeroOne_oneZero")
+        .desc("number of different bits from last cache hit");
     // end
 }
 

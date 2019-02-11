@@ -157,7 +157,7 @@ BaseTags::regStats()
         .name(name() + ".data_accesses")
         .desc("Number of data accesses")
         ;
-
+        
     registerDumpCallback(new BaseTagsDumpCallback(this));
     registerExitCallback(new BaseTagsCallback(this));
 }

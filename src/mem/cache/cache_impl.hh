@@ -85,9 +85,7 @@ Cache::Cache(const Params *p)
         prefetcher->setCache(this);
 
     // added by shen
-    // generate the fault map for a cache
-    if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
-        generateFaultMap(p);
+    lastHitBlock.resize(64, 0);
     // end
 }
 
@@ -375,6 +373,30 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // OK to satisfy access
         incHitCount(pkt);
         satisfyCpuSideRequest(pkt, blk);
+
+        // change by shen
+        std::string cacheName(name());
+
+        if ((cacheName.find("dcache") != cacheName.npos) || (cacheName.find("icache") != cacheName.npos) || (cacheName.find("l2") != cacheName.npos)) {
+            int oneZero = 0;
+            int zeroOne = 0;
+            //inform("blkSize: %d", blkSize);
+            
+            for (int i = 0; i < blkSize; ++i) {
+                uint8_t temp = blk->data[i] ^ lastHitBlock[i];
+                oneZero += countBits(temp & ~blk->data[i]);
+                zeroOne += countBits(temp & blk->data[i]);
+                lastHitBlock[i] = blk->data[i];
+            }
+            zeroOne = zeroOne > 256 ? 256 : zeroOne;
+            oneZero = oneZero > 256 ? 256 : oneZero;
+            zeroOne_oneZero[zeroOne]++;
+            zeroOne_oneZero[257 + oneZero]++;
+            zeroOne_oneZero[514]++;
+            //inform("in onezero");
+        }
+        // end by shen
+
         return true;
     }
 
@@ -1475,13 +1497,6 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         // happens in the subsequent satisfyCpuSideRequest.
         assert(pkt->isRead() || pkt->isWriteInvalidate());
 
-
-        // null-subblock detector here, added by shen
-        std::vector<bool> blockCM(blkSize / SUBBLOCKSIZE, true);
-        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
-            detectNullSubblocks(blk->data, blkSize, blockCM); 
-        // end
-
         // need to do a replacement
         blk = allocateBlock(addr, is_secure, writebacks);
         if (blk == NULL) {
@@ -1537,10 +1552,6 @@ Cache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks)
         assert(pkt->getSize() == blkSize);
 
         std::memcpy(blk->data, pkt->getConstPtr<uint8_t>(), blkSize);
-        // added by shen
-        if (name() == "system.cpu.dcache" || name() == "system.cpu.icache" || name() == "system.l2")
-            countZeroBlocks(blk->data, blkSize); 
-        // end
     }
 
     // We pay for fillLatency here.

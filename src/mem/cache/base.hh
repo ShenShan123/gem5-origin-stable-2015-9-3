@@ -76,6 +76,19 @@ class MSHR;
 /**
  * A basic cache interface. Implements some common functions for speed.
  */
+
+// added by shen
+// set bit counting subroutine
+inline int countBits(Addr n)
+{
+    unsigned int c = 0;
+        
+    for (c = 0; n; ++c)
+        n &= (n - 1);
+    
+    return c;
+}
+
 class BaseCache : public MemObject
 {
     /**
@@ -471,7 +484,8 @@ class BaseCache : public MemObject
     Stats::Scalar mshr_no_allocate_misses;
 
     // added by shen
-    Stats::Vector numZeroSetBytes; // index 0 is for zero bit num, 1-7 is for zero byte num; the last index 8 is total bytes writen in cache
+    Stats::Vector zeroOne_oneZero;
+    //Stats::Vector tag_zeroOne_oneZero;
     // end
     /**
      * @}

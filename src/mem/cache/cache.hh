@@ -62,7 +62,7 @@
 //#include <iostream> // just for debug, by shen
 #include <random> // by shen
 #include <vector>
-#include <math.h>
+#include <string>
 
 //Forward decleration
 class BasePrefetcher;
@@ -241,108 +241,9 @@ class Cache : public BaseCache
      */
     CacheBlk *handleFill(PacketPtr pkt, CacheBlk *blk,
                         PacketList &writebacks);
-    
-    // added by shen
-    // set bit counting subroutine
-    inline int countBits(Addr n)
-    {
-        unsigned int c = 0;
-        
-        for (c = 0; n; ++c)
-            n &= (n - 1);
-    
-        return c;
-    }
-
-    // this is for statistics of the number of zero blocks that are writen to the caches
-    // the default block size is 64 byte.
-    void countZeroBlocks(uint8_t* data, uint32_t blkSize) {
-        uint64_t zeroFlag = 0;
-        std::vector<int> numZeroBits(blkSize, 0);
-        // for counting the zero bits distribution in each sub-block
-        for (int i = 0; i < blkSize; ++i) {
-            zeroFlag |= uint64_t(data[i] == 0) << i;
-            numZeroSetBytes[0] += 8 - countBits(data[i]);
-        }
-
-        numZeroSetBytes[7] += int(zeroFlag == 0xffffffffffffffff);
-
-        for (int i = 0; i < blkSize; ++i) {
-            numZeroSetBytes[1] += int((zeroFlag & 1) == 1);
-
-            if (i % 2 == 0) {
-                numZeroSetBytes[2] += int((zeroFlag & 3) == 3);
-            }
-
-            if (i % 4 == 0) {
-                numZeroSetBytes[3] += int((zeroFlag & 0xf) == 0xf);
-            }
-
-            if (i % 8 == 0) {
-                numZeroSetBytes[4] += int((zeroFlag & 0xff) == 0xff);
-            }
-
-            if (i % 16 == 0) {
-                numZeroSetBytes[5] += int((zeroFlag & 0xffff) == 0xffff);
-            }
-
-            if (i % 32 == 0) {
-                numZeroSetBytes[6] += int((zeroFlag & 0xffffffff) == 0xffffffff);
-            }
-            
-            zeroFlag >>= 1;
-        }
-
-        numZeroSetBytes[8] += blkSize;
-    }
-    // end, by shen
 
     // added by shen
-    // for constructing Concertina
-    std::vector<bool> faultMap;
-    std::vector<bool> comprMap;
-
-#define SUBBLOCKSIZE 4u // 1,2,8 are OK
-#define YIELD 0.001
-
-    // generate the fault map at the construction of a cache
-    void generateFaultMap(const Params *p) {
-        unsigned seed = name() == "system.cpu.dcache" ? 1 : (name() == "system.cpu.icache" ? 2 : 3);
-        std::default_random_engine e (seed);
-        std::normal_distribution<double> norm(0.0,1.0);
-        faultMap.resize(p->size / SUBBLOCKSIZE);
-        comprMap.resize(p->size / SUBBLOCKSIZE);
-
-        // the bit faulty is generated according to a normal distribution,
-        // and tranformed into the fault map
-        for (uint32_t i = 0; i < p->size * 8; ++i) {
-            faultMap[i / 8 / SUBBLOCKSIZE] = YIELD < norm(e); // faulty entry is 0 in FM
-        }
-
-        /*std::cout << name() << "fault map is ";
-        for (uint32_t i = 0; i < faultMap.size(); ++i)
-            std::cout << faultMap[i] << " ";
-        std::cout << std::endl;*/
-    }
-
-    void detectNullSubblocks(uint8_t* data, uint32_t blkSize, std::vector<bool> & cm) {
-        uint64_t zeroFlag = 0;
-
-        for (uint8_t i = 0; i < blkSize; ++i)
-            zeroFlag |= uint64_t(data[i] == 0) << i;
-
-        for (uint8_t i = 0; i < cm.size(); ++i) {
-            std::cout << i << " ";
-            zeroFlag >>= SUBBLOCKSIZE;
-            cm[i] = false;//(zeroFlag & ((1u << SUBBLOCKSIZE) - 1)) != ((1u << SUBBLOCKSIZE) - 1); // null subblock is 0 in CM
-        }
-
-        std::cout << name() << " CM: ";
-        for (int i = 0; i < cm.size(); ++i)
-            std::cout << cm[i] << " ";
-        std::cout << std::endl;
-    }
-    // end, by shen
+    std::vector<uint8_t> lastHitBlock;
 
     /**
      * Performs the access specified by the request.

@@ -74,6 +74,11 @@ class CacheSet
      */
     Blktype* findBlk(Addr tag, bool is_secure, int& way_id) const ;
     Blktype* findBlk(Addr tag, bool is_secure) const ;
+    
+    // changed by shen
+    Blktype* findBlk(Addr tag, bool is_secure, int& way_id, Stats::Scalar& ways) const ; 
+    Blktype* findBlk(Addr tag, bool is_secure, Stats::Scalar& ways) const ;
+    // end
 
     /**
      * Move the given block to the head of the list.
@@ -89,6 +94,7 @@ class CacheSet
 
 };
 
+
 template <class Blktype>
 Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id) const
@@ -102,9 +108,9 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id) const
         if (blks[i]->tag == tag && blks[i]->isValid() &&
             blks[i]->isSecure() == is_secure) {
             way_id = i;
-            return blks[i];
         }
     }
+        if (way_id != assoc) return blks[way_id];
     return NULL;
 }
 
@@ -115,6 +121,38 @@ CacheSet<Blktype>::findBlk(Addr tag, bool is_secure) const
     int ignored_way_id;
     return findBlk(tag, is_secure, ignored_way_id);
 }
+
+// added by shen
+template <class Blktype>
+Blktype*
+CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, Stats::Scalar& ways) const
+{
+    /**
+     * Way_id returns the id of the way that matches the block
+     * If no block is found way_id is set to assoc.
+     */
+    way_id = assoc;
+    for (int i = 0; i < assoc; ++i) {
+        // added by shen
+        if ((blks[i]->tag & tag) != tag) ways++;
+
+        if (blks[i]->tag == tag && blks[i]->isValid() &&
+            blks[i]->isSecure() == is_secure) {
+            way_id = i;
+        }
+    }
+        if (way_id != assoc) return blks[way_id];
+    return NULL;
+}
+
+template <class Blktype>
+Blktype*
+CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, Stats::Scalar& ways) const
+{
+    int ignored_way_id;
+    return findBlk(tag, is_secure, ignored_way_id, ways);
+}
+// end
 
 template <class Blktype>
 void
