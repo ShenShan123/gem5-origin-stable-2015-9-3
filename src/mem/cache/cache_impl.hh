@@ -227,7 +227,8 @@ Cache::satisfyCpuSideRequest(PacketPtr pkt, CacheBlk *blk,
                 break;
         }
 
-        if(errorHappened && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){//发生错误
+        std::string cacheName(name());
+        if(errorHappened && ((cacheName.find("dcache") != std::string::npos) || (cacheName.find("icache") != std::string::npos)) ){//发生错误
             faultReads++;
             blk->isError = true;//设置错误标志
             //找一个未设置isFault的，互换标志即可
@@ -390,7 +391,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Here lat is the value passed as parameter to accessBlock() function
     // that can modify its value.
     blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id);
-    if (blk && blk->isError && (name() == "system.cpu.icache" || name() == "system.cpu.dcache")){
+    //sxj
+    std::string cacheName(name());
+    if (blk && blk->isError && ((cacheName.find("dcache") != std::string::npos) || (cacheName.find("icache") != std::string::npos)) ){
         ++++lat;
         blk->isError = false;
     }
