@@ -376,8 +376,9 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         // change by shen
         std::string cacheName(name());
+        //inform("cacheName: %s, %d, %d", cacheName, cacheName.find("dcache"), std::string::npos);
 
-        if ((cacheName.find("dcache") != cacheName.npos) || (cacheName.find("icache") != cacheName.npos) || (cacheName.find("l2") != cacheName.npos)) {
+        if ((cacheName.find("dcache") != std::string::npos) || (cacheName.find("icache") != std::string::npos) || (cacheName.find("l2") != std::string::npos)) {
             int oneZero = 0;
             int zeroOne = 0;
             //inform("blkSize: %d", blkSize);
@@ -387,6 +388,8 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 oneZero += countBits(temp & ~blk->data[i]);
                 zeroOne += countBits(temp & blk->data[i]);
                 lastHitBlock[i] = blk->data[i];
+                // count the '0's in the request data
+                zeroOne_oneZero[515] +=  8 - countBits(blk->data[i]);
             }
             zeroOne = zeroOne > 256 ? 256 : zeroOne;
             oneZero = oneZero > 256 ? 256 : oneZero;

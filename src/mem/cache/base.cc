@@ -774,9 +774,10 @@ BaseCache::regStats()
 
     // added by shen
     zeroOne_oneZero
-        .init(515) // 515
+        .init(516) // 515
         .name(name() + ".zeroOne_oneZero")
-        .desc("number of different bits from last cache hit");
+        .desc("number of different bits from last cache hit")
+        .flags(nozero);
     // end
 }
 
